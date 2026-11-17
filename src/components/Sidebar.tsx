@@ -32,7 +32,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-head">
-        <span className="brand">Notes</span>
+        <span className="brand">Simpul</span>
         <button className="icon-btn" title="Ciutkan sidebar (Ctrl+\)" onClick={toggleSidebar}>
           <IconSidebar />
         </button>

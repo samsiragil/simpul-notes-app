@@ -7,7 +7,7 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 /// Nama file database di folder data.
 const DB_FILE: &str = "notes.db";
-/// URL database di folder data bawaan (%APPDATA%\com.pribadi.notes\notes.db).
+/// URL database di folder data bawaan (%APPDATA%\com.pribadi.simpul\notes.db).
 /// Dipertahankan apa adanya agar database lama tetap terbaca.
 const DEFAULT_DB_URL: &str = "sqlite:notes.db";
 /// P-5: lokasi folder data pilihan pengguna, disimpan di folder config aplikasi.

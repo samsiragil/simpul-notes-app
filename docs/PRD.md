@@ -360,7 +360,7 @@ Empat milestone; setiap milestone sudah bisa dipakai sehari-hari sebelum lanjut 
 - [ ] CRUD Note dengan editor TipTap dan autosave
 - [ ] Daftar card, pin, Trash
 
-* [ ] Ganti nama aplikasi ke Simpul: `productName`, judul jendela, `package.json`, `Cargo.toml`, dan identifier `com.pribadi.simpul` (sebelum menyimpan data sungguhan, karena identifier menentukan folder data)
+* [x] Ganti nama aplikasi ke Simpul: `productName`, judul jendela, `package.json`, `Cargo.toml`, dan identifier `com.pribadi.simpul` (sebelum menyimpan data sungguhan, karena identifier menentukan folder data)
 
 **M2. Todo Card (sekitar 1 minggu)**
 

@@ -1,4 +1,4 @@
-# Notes
+# Simpul
 
 Aplikasi notes dan todo pribadi untuk Windows: Tauri v2, React, dan SQLite local-first.
 Lihat PRD (`docs/PRD.md`) untuk gambaran lengkapnya. Repo ini berisi **M1 sampai M4**: fondasi, Todo Card, Link dan Group, serta Pencarian dan polish.
@@ -58,10 +58,10 @@ Data di mode ini disimpan di localStorage browser, jadi hanya untuk mencoba UI.
 
 | File | Lokasi |
 | --- | --- |
-| Database | `%APPDATA%\com.pribadi.notes\notes.db` (atau folder data pilihan) |
+| Database | `%APPDATA%\com.pribadi.simpul\notes.db` (atau folder data pilihan) |
 | Backup harian | `<folder data>\backups\` |
-| Pengaturan | `%APPDATA%\com.pribadi.notes\settings.json` |
-| Folder data pilihan | `%APPDATA%\com.pribadi.notes\data-location.json` |
+| Pengaturan | `%APPDATA%\com.pribadi.simpul\settings.json` |
+| Folder data pilihan | `%APPDATA%\com.pribadi.simpul\data-location.json` |
 
 Migrasi skema ada di `src-tauri/migrations/` dan didaftarkan di `src-tauri/src/lib.rs`.
 Versinya dicatat otomatis oleh `tauri-plugin-sql`. Untuk perubahan skema, tambahkan file `000N_*.sql` baru. Jangan mengubah file migrasi yang lama.
