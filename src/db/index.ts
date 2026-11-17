@@ -1,24 +1,31 @@
 import { isTauri } from "../lib/util";
 import { createMemoryRepo } from "./memoryRepo";
-import type { CardRepo } from "./types";
+import type { CardRepo, TodoRepo } from "./types";
 
 export * from "./types";
 
-let repo: CardRepo | null = null;
+interface Repos {
+  cards: CardRepo;
+  todos: TodoRepo;
+}
+
+let repos: Repos | null = null;
 
 /** Di Tauri: SQLite. Di browser biasa (npm run dev): localStorage, untuk mencoba UI. */
-export async function initRepo(): Promise<CardRepo> {
-  if (repo) return repo;
+export async function initRepo(): Promise<void> {
+  if (repos) return;
   if (isTauri()) {
     const { createSqlRepo } = await import("./sqlRepo");
-    repo = await createSqlRepo();
+    repos = await createSqlRepo();
   } else {
-    repo = createMemoryRepo();
+    repos = createMemoryRepo();
   }
-  return repo;
 }
 
-export function cards(): CardRepo {
-  if (!repo) throw new Error("Repository belum diinisialisasi");
-  return repo;
+function ready(): Repos {
+  if (!repos) throw new Error("Repository belum diinisialisasi");
+  return repos;
 }
+
+export const cards = (): CardRepo => ready().cards;
+export const todos = (): TodoRepo => ready().todos;
