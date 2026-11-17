@@ -54,7 +54,7 @@ interface AppState {
   createCard(type: CardType, opts?: NewCardOptions): Promise<void>;
   /** Simpan perubahan; daftar diperbarui tanpa reload penuh. */
   saveCard(id: string, patch: CardPatch): Promise<void>;
-  /** Cerminkan perubahan item Todo ke daftar (progres T-5 dan urutan S-1) tanpa query ulang. */
+  /** Cerminkan perubahan item Todo ke daftar (progres T-5) tanpa query ulang dan tanpa mengubah urutan. */
   patchProgress(id: string, progress: TodoProgress, updatedAt: number): void;
   togglePin(id: string): Promise<void>;
   trashCard(id: string): Promise<void>;
@@ -223,13 +223,16 @@ export const useApp = create<AppState>((set, get) => {
 
     async saveCard(id, patch) {
       const updated = await cards().update(id, patch);
-      set({ list: sortActive(get().list.map((c) => (c.id === id ? updated : c))) });
+      const list = get().list.map((c) => (c.id === id ? updated : c));
+      // Edit isi/judul tidak memindahkan card di daftar; urutan S-1 diterapkan saat daftar dimuat ulang.
+      // Pin tetap langsung mengubah posisi.
+      set({ list: "pinned" in patch ? sortActive(list) : list });
     },
 
     patchProgress(id, progress, updatedAt) {
       const { list } = get();
       if (!list.some((c) => c.id === id)) return;
-      set({ list: sortActive(list.map((c) => (c.id === id ? { ...c, progress, updatedAt } : c))) });
+      set({ list: list.map((c) => (c.id === id ? { ...c, progress, updatedAt } : c)) });
     },
 
     async togglePin(id) {
