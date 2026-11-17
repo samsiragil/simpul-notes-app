@@ -1,0 +1,39 @@
+/* Design token dari "Desain Notes App Desktop" (PRD: Config style) */
+:root {
+  --bg: #fdfcfa;          /* area card */
+  --bg-list: #faf9f6;     /* daftar card */
+  --bg-side: #f6f4f0;     /* sidebar */
+  --surface: #ffffff;
+  --text: #22211f;
+  --text-2: #55524c;
+  --text-3: #8a867e;
+  --text-4: #9a968e;
+  --border: #e4e1db;
+  --border-soft: #ece9e3;
+  --hover: #ece9e3;
+  --field: #f0eee9;
+  --highlight: #fbf0b8;
+  --code-bg: #f2f1ee;
+
+  --note: oklch(0.56 0.09 250);
+  --note-strong: oklch(0.5 0.1 250);
+  --note-tint: oklch(0.96 0.02 250);
+  --todo: oklch(0.56 0.09 155);
+  --todo-tint: oklch(0.96 0.025 155);
+  --danger: oklch(0.55 0.15 25);
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --sidebar-w: 220px;
+  --list-w: 300px;
+
+  /* Diisi applyStyle() dari config style */
+  --font-ui: "Inter Variable", system-ui, sans-serif;
+  --font-body: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --fs: 17px;
+  --lh: 1.65;
+  --content-w: 720px;
+}
