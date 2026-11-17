@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { applyStyle, DEFAULT_STYLE, type StyleConfig } from "../config/style";
+import type { DoneMode } from "../lib/order";
 import { isTauri } from "../lib/util";
 
 /** Disimpan di settings.json (Tauri) atau localStorage (browser). Tidak ikut sync. */
@@ -8,6 +9,8 @@ export interface Settings {
   sidebarOpen: boolean;
   listOpen: boolean;
   lastCardId: string | null;
+  /** T-6: item selesai pindah ke bawah atau disembunyikan. */
+  todoDoneMode: DoneMode;
 }
 
 const DEFAULTS: Settings = {
@@ -15,6 +18,7 @@ const DEFAULTS: Settings = {
   sidebarOpen: true,
   listOpen: true,
   lastCardId: null,
+  todoDoneMode: "bottom",
 };
 
 interface Backend {
@@ -64,12 +68,13 @@ interface SettingsState extends Settings {
   toggleSidebar(): void;
   toggleList(): void;
   setLastCard(id: string | null): void;
+  setTodoDoneMode(mode: DoneMode): void;
 }
 
 export const useSettings = create<SettingsState>((set, get) => {
   const persist = () => {
-    const { style, sidebarOpen, listOpen, lastCardId } = get();
-    void backend?.set({ style, sidebarOpen, listOpen, lastCardId });
+    const { style, sidebarOpen, listOpen, lastCardId, todoDoneMode } = get();
+    void backend?.set({ style, sidebarOpen, listOpen, lastCardId, todoDoneMode });
   };
 
   return {
@@ -110,6 +115,11 @@ export const useSettings = create<SettingsState>((set, get) => {
     setLastCard(id) {
       if (get().lastCardId === id) return;
       set({ lastCardId: id });
+      persist();
+    },
+
+    setTodoDoneMode(todoDoneMode) {
+      set({ todoDoneMode });
       persist();
     },
   };

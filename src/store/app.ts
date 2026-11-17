@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { cards, type Card, type CardPatch, type CardType } from "../db";
+import { cards, type Card, type CardPatch, type CardType, type TodoProgress } from "../db";
 import { useSettings } from "./settings";
 
 export type View = "all" | "trash";
@@ -24,6 +24,8 @@ interface AppState {
   createCard(type: CardType): Promise<void>;
   /** Simpan perubahan; daftar diperbarui tanpa reload penuh. */
   saveCard(id: string, patch: CardPatch): Promise<void>;
+  /** Cerminkan perubahan item Todo ke daftar (progres T-5 dan urutan S-1) tanpa query ulang. */
+  patchProgress(id: string, progress: TodoProgress, updatedAt: number): void;
   togglePin(id: string): Promise<void>;
   trashCard(id: string): Promise<void>;
   restoreCard(id: string): Promise<void>;
@@ -91,6 +93,13 @@ export const useApp = create<AppState>((set, get) => ({
     const updated = await cards().update(id, patch);
     const list = get().list.map((c) => (c.id === id ? updated : c));
     set({ list: get().view === "trash" ? list : sortActive(list) });
+  },
+
+  patchProgress(id, progress, updatedAt) {
+    const { list, view } = get();
+    if (!list.some((c) => c.id === id)) return;
+    const next = list.map((c) => (c.id === id ? { ...c, progress, updatedAt } : c));
+    set({ list: view === "trash" ? next : sortActive(next) });
   },
 
   async togglePin(id) {
