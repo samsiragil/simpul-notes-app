@@ -25,3 +25,7 @@
 
 - Style mengikuti token di `src/styles/tokens.css`.
 - Bahasa UI: Indonesia.
+
+## Git
+
+- Kerjakan semua perbaikan dan fitur baru langsung di branch `main`. Jangan buat branch baru (aplikasi ini dipakai sendiri).
