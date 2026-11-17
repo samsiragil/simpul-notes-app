@@ -127,6 +127,7 @@ export function TodoItemRow({ item, readOnly, prevId, nextId, onExitUp, onExitDo
       <textarea
         ref={ref}
         className="todo-text"
+        spellCheck={false}
         rows={1}
         value={item.text}
         readOnly={readOnly}

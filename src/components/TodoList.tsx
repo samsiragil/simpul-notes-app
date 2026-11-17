@@ -140,6 +140,7 @@ function AddItem({ inputRef, onExitUp }: { inputRef: RefObject<HTMLInputElement 
       <input
         ref={inputRef}
         className="todo-add-input"
+        spellCheck={false}
         value={text}
         placeholder="Tambah item…"
         onChange={(e) => setText(e.target.value)}

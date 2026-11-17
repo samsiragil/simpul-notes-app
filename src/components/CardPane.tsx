@@ -186,6 +186,7 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
         <textarea
           ref={titleRef}
           className="title-input"
+          spellCheck={false}
           rows={1}
           placeholder="Tanpa judul"
           value={title}
