@@ -6,7 +6,7 @@ import type { Group } from "../db";
 import { useApp } from "../store/app";
 import { useSettings } from "../store/settings";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { IconAll, IconGroup, IconInbox, IconMore, IconPlus, IconSettings, IconSidebar, IconTrash } from "./Icons";
+import { IconAll, IconGroup, IconGroupAdd, IconInbox, IconMore, IconRename, IconSettings, IconSidebar, IconTrash } from "./Icons";
 
 /** ID dnd-kit: group di sidebar dan card di daftar (lihat `AppDnd`). */
 export const groupDndId = (id: string) => `group:${id}`;
@@ -32,7 +32,10 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-head">
-        <span className="brand">Simpul</span>
+        <span className="brand">
+          <img src="/logo.svg" alt="" width={18} height={18} />
+          Simpul
+        </span>
         <button className="icon-btn" title="Ciutkan sidebar (Ctrl+\)" onClick={toggleSidebar}>
           <IconSidebar />
         </button>
@@ -54,7 +57,7 @@ export function Sidebar() {
       <div className="nav-label with-action">
         <span>Group</span>
         <button className="icon-btn small" title="Group baru" onClick={() => setAdding(true)}>
-          <IconPlus size={11} />
+          <IconGroupAdd size={14} />
         </button>
       </div>
 
@@ -179,6 +182,7 @@ function GroupItem({ group, count, active, onOpen, onDelete }: { group: Group; c
               setRenaming(true);
             }}
           >
+            <IconRename />
             <span className="menu-label">Ganti nama</span>
           </button>
           <button
@@ -188,6 +192,7 @@ function GroupItem({ group, count, active, onOpen, onDelete }: { group: Group; c
               onDelete();
             }}
           >
+            <IconTrash size={13} />
             <span className="menu-label">Hapus group</span>
           </button>
         </PopMenu>

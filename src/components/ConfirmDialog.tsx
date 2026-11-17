@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { IconWarning } from "./Icons";
 
 interface Props {
   title: string;
@@ -26,7 +27,10 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm,
       }}
     >
       <div className="confirm" role="alertdialog" aria-label={title}>
-        <h2>{title}</h2>
+        <h2>
+          {danger && <IconWarning className="confirm-icon" />}
+          {title}
+        </h2>
         <p>{message}</p>
         <div className="confirm-actions">
           <button className="btn" onClick={onCancel}>

@@ -8,6 +8,7 @@ import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import type { Editor } from "@tiptap/core";
+import { IconBold, IconCode, IconHeading, IconHighlight, IconItalic, IconLink, IconStrike, IconUnderline } from "../components/Icons";
 
 interface Props {
   /** Markdown awal. Editor dibuat ulang saat cardId berganti. */
@@ -101,15 +102,15 @@ function FormatBubble({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu editor={editor} options={{ placement: "top" }}>
       <div className="bubble">
-        {b(s.bold, <b>B</b>, "Bold (Ctrl+B)", () => editor.chain().focus().toggleBold().run())}
-        {b(s.italic, <i>I</i>, "Italic (Ctrl+I)", () => editor.chain().focus().toggleItalic().run())}
-        {b(s.underline, <u>U</u>, "Underline (Ctrl+U)", () => editor.chain().focus().toggleUnderline().run())}
-        {b(s.strike, <s>S</s>, "Coret (Ctrl+Shift+S)", () => editor.chain().focus().toggleStrike().run())}
-        {b(s.highlight, <span style={{ background: "var(--highlight)", color: "var(--text)", padding: "0 3px", borderRadius: 3 }}>H</span>, "Highlight (Ctrl+Shift+H)", () => editor.chain().focus().toggleHighlight().run())}
+        {b(s.bold, <IconBold />, "Bold (Ctrl+B)", () => editor.chain().focus().toggleBold().run())}
+        {b(s.italic, <IconItalic />, "Italic (Ctrl+I)", () => editor.chain().focus().toggleItalic().run())}
+        {b(s.underline, <IconUnderline />, "Underline (Ctrl+U)", () => editor.chain().focus().toggleUnderline().run())}
+        {b(s.strike, <IconStrike />, "Coret (Ctrl+Shift+S)", () => editor.chain().focus().toggleStrike().run())}
+        {b(s.highlight, <IconHighlight />, "Highlight (Ctrl+Shift+H)", () => editor.chain().focus().toggleHighlight().run())}
         <span className="sep" />
-        {b(s.code, <code style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{"</>"}</code>, "Inline code (Ctrl+E)", () => editor.chain().focus().toggleCode().run())}
-        {b(s.link, "Link", "Link", setLink)}
-        {b(s.h2, "H2", "Heading 2", () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
+        {b(s.code, <IconCode />, "Inline code (Ctrl+E)", () => editor.chain().focus().toggleCode().run())}
+        {b(s.link, <IconLink />, "Link", setLink)}
+        {b(s.h2, <IconHeading />, "Heading 2", () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
       </div>
     </BubbleMenu>
   );

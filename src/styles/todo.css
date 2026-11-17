@@ -13,7 +13,7 @@
   margin: 0 0 0 -28px; padding: 0.12em 0 0.12em 6px; border-radius: var(--radius-sm);
   background: var(--bg);
 }
-.todo-item.dragging { z-index: 2; box-shadow: 0 6px 18px rgba(34, 33, 31, 0.12); }
+.todo-item.dragging { z-index: 2; box-shadow: 0 6px 18px rgba(var(--shadow-rgb), 0.12); }
 
 .todo-grip, .todo-remove {
   flex: none; border: 0; background: none; padding: 0; color: var(--text-4);
@@ -30,7 +30,7 @@
 .todo-check {
   flex: none; width: 1em; height: 1em; padding: 0; border-radius: 5px; cursor: pointer;
   margin-top: calc((var(--fs) * var(--lh) - 1em) / 2);
-  border: 1.5px solid #c9c5bd; background: var(--surface); color: #fff;
+  border: 1.5px solid var(--check-border); background: var(--surface); color: var(--on-solid);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .todo-check:hover { border-color: var(--todo); }
@@ -42,8 +42,8 @@
   flex: 1; min-width: 0; border: 0; outline: none; background: none; resize: none; overflow: hidden;
   padding: 0; margin: 0; font: inherit; line-height: inherit; color: var(--text);
 }
-.todo-text::placeholder { color: #c9c5bd; }
-.todo-item.done .todo-text { color: var(--text-3); text-decoration: line-through; text-decoration-color: #c9c5bd; }
+.todo-text::placeholder { color: var(--placeholder); }
+.todo-item.done .todo-text { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--placeholder); }
 
 .todo-add { display: flex; align-items: center; gap: 0.55em; padding: 0.12em 0; cursor: text; }
 .todo-add-icon {
@@ -52,7 +52,7 @@
 .todo-add-input {
   flex: 1; min-width: 0; border: 0; outline: none; background: none; padding: 0; font: inherit; line-height: inherit;
 }
-.todo-add-input::placeholder { color: #c9c5bd; }
+.todo-add-input::placeholder { color: var(--placeholder); }
 
 .todo-section {
   display: block; margin: 1.1em 0 0.3em; padding: 0; border: 0; background: none; text-align: left;

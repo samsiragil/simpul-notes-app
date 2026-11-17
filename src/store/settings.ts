@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { applyStyle, DEFAULT_STYLE, type StyleConfig } from "../config/style";
+import { ACCENTS, applyStyle, DEFAULT_STYLE, UI_FONTS, type StyleConfig } from "../config/style";
 import type { DoneMode } from "../lib/order";
 import { isTauri } from "../lib/util";
 
@@ -109,6 +109,9 @@ export const useSettings = create<SettingsState>((set, get) => {
       backend = await createBackend();
       const saved = await backend.get();
       const style = { ...DEFAULT_STYLE, ...(saved.style ?? {}) };
+      // Nilai lama yang tidak dikenal lagi (mis. font serif sebagai font aplikasi) kembali ke default.
+      if (!UI_FONTS.some((f) => f.key === style.uiFont)) style.uiFont = DEFAULT_STYLE.uiFont;
+      if (!ACCENTS.some((a) => a.key === style.accent)) style.accent = DEFAULT_STYLE.accent;
       applyStyle(style);
       set({ ...DEFAULTS, ...saved, style, listWidth: clampListWidth(saved.listWidth ?? LIST_WIDTH.default), loaded: true });
     },
@@ -120,9 +123,11 @@ export const useSettings = create<SettingsState>((set, get) => {
       persist();
     },
 
+    // Tema (terang/gelap) dibiarkan; yang dikembalikan aksen, font, dan ukuran.
     resetStyle() {
-      applyStyle(DEFAULT_STYLE);
-      set({ style: DEFAULT_STYLE });
+      const style = { ...DEFAULT_STYLE, theme: get().style.theme };
+      applyStyle(style);
+      set({ style });
       persist();
     },
 

@@ -1,5 +1,7 @@
 /* Design token dari "Desain Notes App Desktop" (PRD: Config style) */
 :root {
+  color-scheme: light;
+
   --bg: #fdfcfa;          /* area card */
   --bg-list: #faf9f6;     /* daftar card */
   --bg-side: #f6f4f0;     /* sidebar */
@@ -8,16 +10,44 @@
   --text-2: #55524c;
   --text-3: #8a867e;
   --text-4: #9a968e;
+  --text-quote: #4b4a46;
+  --icon: #6f6b64;
+  --placeholder: #c9c5bd;
   --border: #e4e1db;
   --border-soft: #ece9e3;
+  --border-strong: #d6d2cb;
+  --check-border: #c9c5bd;
   --hover: #ece9e3;
+  --row-hover: #f3f1ed;
   --field: #f0eee9;
+  --th-bg: #faf9f7;
   --highlight: #fbf0b8;
   --code-bg: #f2f1ee;
+  --on-solid: #ffffff;    /* teks/ikon di atas warna solid */
 
-  --note: oklch(0.56 0.09 250);
-  --note-strong: oklch(0.5 0.1 250);
-  --note-tint: oklch(0.96 0.02 250);
+  --overlay: rgba(34, 33, 31, 0.18);
+  --shadow-rgb: 34, 33, 31;
+
+  /* Bubble toolbar */
+  --bubble-bg: #22211f;
+  --bubble-text: #e9e6e0;
+  --bubble-hover: rgba(255, 255, 255, 0.12);
+  --bubble-on: rgba(255, 255, 255, 0.2);
+  --bubble-on-text: #ffffff;
+  --bubble-sep: rgba(255, 255, 255, 0.15);
+
+  /* P-7: aksen. Hue & chroma diisi applyStyle() dari preset aksen. */
+  --accent-h: 252;
+  --accent-c: 0.13;
+  --accent: oklch(0.55 var(--accent-c) var(--accent-h));
+  --accent-strong: oklch(0.5 calc(var(--accent-c) * 1.1) var(--accent-h));
+  --accent-tint: oklch(0.96 calc(var(--accent-c) * 0.22) var(--accent-h));
+  --selection: oklch(0.9 calc(var(--accent-c) * 0.55) var(--accent-h));
+
+  /* Aksen Note mengikuti aksen UI; Todo tetap hijau sebagai pembeda tipe. */
+  --note: var(--accent);
+  --note-strong: var(--accent-strong);
+  --note-tint: var(--accent-tint);
   --todo: oklch(0.56 0.09 155);
   --todo-tint: oklch(0.96 0.025 155);
   --danger: oklch(0.55 0.15 25);
@@ -36,4 +66,47 @@
   --fs: 17px;
   --lh: 1.65;
   --content-w: 720px;
+}
+
+/* P-1: dark mode "gelap hangat", selaras dengan nuansa kertas mode terang. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #1f1e1c;
+  --bg-list: #1a1917;
+  --bg-side: #161513;
+  --surface: #262522;
+  --text: #ebe8e2;
+  --text-2: #bdb8af;
+  --text-3: #8f8a81;
+  --text-4: #7d786f;
+  --text-quote: #b3aea5;
+  --icon: #a29d94;
+  --placeholder: #5f5b54;
+  --border: #33312d;
+  --border-soft: #2a2825;
+  --border-strong: #47443f;
+  --check-border: #5f5b54;
+  --hover: #2c2a27;
+  --row-hover: #252421;
+  --field: #2a2825;
+  --th-bg: #24231f;
+  --highlight: oklch(0.45 0.08 90);
+  --code-bg: #2a2926;
+  --on-solid: #161513;
+
+  --overlay: rgba(0, 0, 0, 0.5);
+  --shadow-rgb: 0, 0, 0;
+
+  --bubble-bg: #3a3834;
+  --bubble-text: #e9e6e0;
+
+  --accent: oklch(0.74 var(--accent-c) var(--accent-h));
+  --accent-strong: oklch(0.8 calc(var(--accent-c) * 1.1) var(--accent-h));
+  --accent-tint: oklch(0.3 calc(var(--accent-c) * 0.4) var(--accent-h));
+  --selection: oklch(0.4 calc(var(--accent-c) * 0.6) var(--accent-h));
+
+  --todo: oklch(0.72 0.1 155);
+  --todo-tint: oklch(0.3 0.04 155);
+  --danger: oklch(0.68 0.15 25);
 }

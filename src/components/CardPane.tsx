@@ -6,7 +6,7 @@ import { debounce, fullDate, relativeTime } from "../lib/util";
 import { selectedCard, useApp } from "../store/app";
 import { useSettings } from "../store/settings";
 import { GroupChips } from "./GroupChips";
-import { IconBack, IconFocus, IconLink, IconList, IconPin, IconRestore, IconSearch, IconSidebar, IconTrash } from "./Icons";
+import { IconBack, IconFocus, IconLink, IconList, IconNote, IconPin, IconRestore, IconSearch, IconSidebar, IconTodo, IconTrash } from "./Icons";
 import { LinkedPanel } from "./LinkedPanel";
 import { focusFirstTodo, TodoList } from "./TodoList";
 import { TodoProgress } from "./TodoProgress";
@@ -55,15 +55,19 @@ export function CardPane() {
       ) : (
         <div className="pane-empty">
           {view === "trash" ? (
-            "Pilih card di Trash untuk melihat atau memulihkannya."
+            <>
+              <span className="empty-icon"><IconTrash size={26} /></span>
+              <span>Pilih card di Trash untuk melihat atau memulihkannya.</span>
+            </>
           ) : (
             <>
+              <span className="empty-icon"><IconNote size={26} /></span>
               <span>Tidak ada card yang dibuka.</span>
               <span>
-                <span className="kbd">Ctrl</span> + <span className="kbd">N</span> &nbsp;Note baru
+                <IconNote size={13} className="inline-icon note" /> <span className="kbd">Ctrl</span> + <span className="kbd">N</span> &nbsp;Note baru
               </span>
               <span>
-                <span className="kbd">Ctrl</span> + <span className="kbd">Shift</span> + <span className="kbd">T</span> &nbsp;Todo Card baru
+                <IconTodo size={13} className="inline-icon todo" /> <span className="kbd">Ctrl</span> + <span className="kbd">Shift</span> + <span className="kbd">T</span> &nbsp;Todo Card baru
               </span>
             </>
           )}
@@ -173,9 +177,12 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
               </>
             ) : (
               <>
-                <button className="btn" onClick={() => setConfirmDelete(true)}>Hapus permanen</button>
+                <button className="btn" onClick={() => setConfirmDelete(true)}>
+                  <IconTrash size={13} />
+                  Hapus permanen
+                </button>
                 <button className="btn primary" onClick={() => restoreCard(card.id)}>
-                  <IconRestore size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+                  <IconRestore size={13} />
                   Pulihkan
                 </button>
               </>

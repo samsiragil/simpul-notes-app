@@ -4,13 +4,13 @@ import type { Card } from "../db";
 import { relativeTime, snippetFromMarkdown } from "../lib/util";
 import { useApp, visibleCards, type TypeFilter } from "../store/app";
 import { LIST_WIDTH, useSettings } from "../store/settings";
-import { IconLink, IconList, IconNote, IconPin, IconPlus, IconSearch, IconSidebar, IconTodo } from "./Icons";
+import { IconAll, IconLink, IconList, IconNote, IconPin, IconPlus, IconSearch, IconSidebar, IconTodo, IconTrash } from "./Icons";
 import { TodoProgress } from "./TodoProgress";
 
-const FILTERS: { key: TypeFilter; label: string }[] = [
-  { key: "all", label: "Semua" },
-  { key: "note", label: "Note" },
-  { key: "todo", label: "Todo" },
+const FILTERS: { key: TypeFilter; label: string; icon: typeof IconAll }[] = [
+  { key: "all", label: "Semua", icon: IconAll },
+  { key: "note", label: "Note", icon: IconNote },
+  { key: "todo", label: "Todo", icon: IconTodo },
 ];
 
 export function TypeIcon({ type }: { type: Card["type"] }) {
@@ -65,8 +65,8 @@ export function CardList() {
           </div>
           {!isTrash && (
             <>
-              <button className="add-btn" title="Note baru (Ctrl+N)" onClick={() => createCard("note")}>
-                <IconPlus style={{ color: "var(--note)" }} />
+              <button className="add-btn primary" title="Note baru (Ctrl+N)" onClick={() => createCard("note")}>
+                <IconPlus />
                 Note
               </button>
               <button className="add-btn" title="Todo Card baru (Ctrl+Shift+T)" onClick={() => createCard("todo")}>
@@ -89,6 +89,7 @@ export function CardList() {
           <div className="segmented" role="tablist">
             {FILTERS.map((f) => (
               <button key={f.key} role="tab" className={typeFilter === f.key ? "active" : ""} onClick={() => setTypeFilter(f.key)}>
+                <f.icon size={13} />
                 {f.label}
               </button>
             ))}
@@ -99,6 +100,7 @@ export function CardList() {
       <div className="list-body">
         {cards.length === 0 && (
           <div className="list-empty">
+            <span className="empty-icon">{isTrash ? <IconTrash size={22} /> : typeFilter === "todo" ? <IconTodo size={22} /> : <IconNote size={22} />}</span>
             {isTrash ? (
               "Trash kosong. Card yang dihapus disimpan di sini selama 30 hari."
             ) : view === "group" && typeFilter === "all" ? (

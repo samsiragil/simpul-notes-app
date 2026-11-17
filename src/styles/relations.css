@@ -16,7 +16,7 @@
 .nav-item.drop-target { background: var(--todo-tint); box-shadow: inset 0 0 0 1px var(--todo); color: var(--text); }
 .nav-input {
   height: 32px; width: 100%; padding: 0 10px; border-radius: var(--radius-sm);
-  border: 1px solid var(--note); background: var(--surface); outline: none; font-size: 13.5px;
+  border: 1px solid var(--accent); background: var(--surface); outline: none; font-size: 13.5px;
 }
 
 /* ---------- Daftar card ---------- */
@@ -26,7 +26,7 @@
 .drag-chip {
   display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; max-width: 260px;
   border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border);
-  box-shadow: 0 8px 24px rgba(34, 33, 31, 0.14); font-weight: 600; font-size: 13px; cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(var(--shadow-rgb), 0.14); font-weight: 600; font-size: 13px; cursor: grabbing;
 }
 .drag-chip span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -50,21 +50,21 @@
   display: inline-flex; align-items: center; gap: 4px; border: 1px dashed var(--border); background: none;
   border-radius: 999px; padding: 1px 8px; font-size: 11.5px; color: var(--text-3); cursor: pointer;
 }
-.chip-add:hover { border-color: #d6d2cb; color: var(--text-2); }
+.chip-add:hover { border-color: var(--border-strong); color: var(--text-2); }
 .group-menu-anchor { position: relative; display: inline-flex; }
 
 /* ---------- Menu kecil ---------- */
 .menu {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; width: 240px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: 0 12px 32px rgba(34, 33, 31, 0.12); padding: 6px; display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 12px 32px rgba(var(--shadow-rgb), 0.12); padding: 6px; display: flex; flex-direction: column; gap: 4px;
 }
 .menu.right { left: auto; right: 0; top: 30px; width: 170px; }
 .menu-input {
   height: 30px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--border);
   background: var(--surface); outline: none; font-size: 13px;
 }
-.menu-input:focus { border-color: var(--note); }
+.menu-input:focus { border-color: var(--accent); }
 .menu-list { display: flex; flex-direction: column; max-height: 240px; overflow: auto; }
 .menu-item {
   display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border: 0; background: none;
@@ -77,10 +77,10 @@
 
 /* Kotak centang pilihan (dialog Hubungkan, menu group) */
 .pick {
-  width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid #cfcac2;
-  display: inline-flex; align-items: center; justify-content: center; color: #fff;
+  width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid var(--check-border);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--on-solid);
 }
-.pick.on { background: var(--note); border-color: var(--note); }
+.pick.on { background: var(--accent); border-color: var(--accent); }
 .pick.ghost { border-style: dashed; color: var(--text-3); }
 
 /* ---------- Panel Terhubung ---------- */
@@ -115,7 +115,7 @@
 .palette {
   width: min(600px, calc(100vw - 48px)); max-height: 70vh; display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
-  box-shadow: 0 24px 60px rgba(34, 33, 31, 0.16); overflow: hidden;
+  box-shadow: 0 24px 60px rgba(var(--shadow-rgb), 0.16); overflow: hidden;
 }
 .palette-head { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-bottom: 1px solid var(--border-soft); }
 .palette-input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font-size: 15px; height: 32px; }
@@ -143,9 +143,12 @@
 /* ---------- Dialog konfirmasi ---------- */
 .confirm {
   width: min(400px, calc(100vw - 48px)); background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); box-shadow: 0 20px 50px rgba(34, 33, 31, 0.12); padding: 20px 22px 18px;
+  border-radius: var(--radius-lg); box-shadow: 0 20px 50px rgba(var(--shadow-rgb), 0.12); padding: 20px 22px 18px;
 }
-.confirm h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+.confirm h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.confirm-icon { color: var(--danger); flex: none; }
+.menu-item svg { flex: none; color: var(--text-3); }
+.menu-item.danger svg { color: inherit; }
 .confirm p { margin: 0 0 18px; font-size: 13px; line-height: 1.55; color: var(--text-2); }
 .confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.btn.danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn.danger-solid { background: var(--danger); border-color: var(--danger); color: var(--on-solid); }

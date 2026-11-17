@@ -3,6 +3,7 @@ import { BACKUP_KEEP, checkDataDir, exportTo, moveDataDir, resetDataDir, runDail
 import * as native from "../lib/native";
 import { fullDate } from "../lib/util";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { IconBackup, IconExport, IconFolderOpen, IconRestore } from "./Icons";
 
 type Status = { kind: "ok" | "error"; text: string } | null;
 type PendingMove = Extract<MoveCheck, { kind: "copy" | "useExisting" }> | { kind: "reset" };
@@ -105,10 +106,12 @@ function DataSettingsNative() {
         )}
         <div className="data-actions">
           <button className="btn" disabled={!!busy} onClick={pickDataDir}>
+            <IconFolderOpen />
             Ganti folder…
           </button>
           {!info.isDefault && (
             <button className="btn" disabled={!!busy} onClick={() => setMove({ kind: "reset" })}>
+              <IconRestore size={14} />
               Kembali ke folder bawaan
             </button>
           )}
@@ -138,6 +141,7 @@ function DataSettingsNative() {
         )}
         <div className="data-actions">
           <button className="btn" disabled={!!busy} onClick={backupNow}>
+            <IconBackup />
             {busy === "backup" ? "Membuat backup…" : "Backup sekarang"}
           </button>
         </div>
@@ -151,6 +155,7 @@ function DataSettingsNative() {
         </p>
         <div className="data-actions">
           <button className="btn" disabled={!!busy} onClick={exportAll}>
+            <IconExport />
             {busy === "export" ? "Mengekspor…" : "Export ke folder…"}
           </button>
         </div>

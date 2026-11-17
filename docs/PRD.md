@@ -141,12 +141,13 @@ Semua kebutuhan di bawah wajib untuk v1 kecuali yang ditandai (Nice). ID dipakai
 
 | ID | Kebutuhan |
 | --- | --- |
-| P-1 | Light mode (dark mode: Nice) |
+| P-1 | Tema terang dan gelap ("gelap hangat"), plus opsi ikuti tema sistem |
 | P-2 | Config style: pilih font, ukuran, jarak baris, lebar kolom (lihat bagian Config style) |
 | P-3 | Mode fokus: sembunyikan sidebar dan daftar |
 | P-4 | Ingat ukuran jendela, layout, dan card terakhir yang dibuka |
 | P-5 | Pilih lokasi folder data |
 | P-6 | Export semua data ke folder Markdown + JSON |
+| P-7 | Aksen warna: 8 preset (Biru tinta, Teal, Sage, Ungu, Terakota, Amber, Rose, Grafit). Aksen dipakai untuk UI dan Note; Todo tetap hijau |
 
 ## User flow utama
 
@@ -240,8 +241,9 @@ Design token dari [Desain Notes App Desktop](https://claude.ai/artifact/8VkENxeD
 | `--border` | `#E4E1DB` | Garis 1px |
 | `--hover` | `#ECE9E3` | Hover dan item aktif |
 | `--highlight` | `#FBF0B8` | Highlight teks |
-| `--note` | `oklch(0.56 0.09 250)` | Aksen Note (biru tinta) |
-| `--note-tint` | `oklch(0.96 0.02 250)` | Latar lembut Note |
+| `--accent` | `oklch(0.56 C H)` | Aksen UI (P-7); default biru tinta H=250, C=0.09 |
+| `--note` | `var(--accent)` | Aksen Note, mengikuti aksen |
+| `--note-tint` | `var(--accent-tint)` | Latar lembut Note |
 | `--todo` | `oklch(0.56 0.09 155)` | Aksen Todo (hijau) |
 | `--todo-tint` | `oklch(0.96 0.025 155)` | Latar lembut Todo |
 
@@ -400,4 +402,4 @@ Asumsi yang dipakai di dokumen ini, perlu dikonfirmasi sebelum M1:
 - [x] Penyimpanan: SQLite local-first dengan skema siap sync ke Supabase (M5).
 - [ ] Card baru yang dibuat dari dialog Hubungkan otomatis masuk group yang sama: setuju?
 - [ ] Item Todo yang selesai: pindah ke bawah (default) atau langsung disembunyikan?
-- [ ] Dark mode masuk v1 atau ditunda?
+- [x] Dark mode masuk v1 (P-1), bersama aksen warna (P-7).
