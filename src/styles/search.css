@@ -1,0 +1,69 @@
+/* M4: pencarian Ctrl+K (S-3..S-5), mode fokus dan lebar daftar (P-3, P-4), tab Data (P-5, P-6). */
+
+/* ---------- Pemicu pencarian di daftar ---------- */
+.search-trigger {
+  display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px 0 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+  color: var(--text-3); font-size: 12.5px; cursor: pointer; text-align: left;
+}
+.search-trigger span:first-of-type { flex: 1; }
+.search-trigger:hover { border-color: #d6d2cb; color: var(--text-2); }
+.search-trigger .kbd { font-size: 10.5px; }
+
+/* ---------- Command palette pencarian ---------- */
+.palette.search { width: min(680px, calc(100vw - 48px)); }
+.search-filters {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 16px; border-bottom: 1px solid var(--border-soft);
+}
+.search-filters .segmented { width: 220px; flex: none; }
+select.select.search-group { width: auto; max-width: 220px; height: 28px; padding-top: 0; padding-bottom: 0; font-size: 12.5px; }
+.palette-section {
+  padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-4); text-transform: uppercase;
+}
+.palette.search .palette-snippet { white-space: nowrap; }
+.palette.search .row-time { margin-left: 2px; }
+.search-groups {
+  flex: none; max-width: 140px; font-size: 11.5px; color: var(--text-4);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- Daftar card: lebar bisa diubah (P-4) ---------- */
+.list { position: relative; }
+.list-resizer {
+  position: absolute; top: 0; right: -3px; width: 6px; height: 100%; cursor: col-resize; z-index: 5; touch-action: none;
+}
+.list-resizer::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 2px; width: 2px; background: transparent; transition: background 0.12s;
+}
+.list-resizer:hover::after, .list-resizer:active::after { background: var(--border); }
+
+/* ---------- Mode fokus (P-3) ---------- */
+.app.focus .pane-bar .meta { opacity: 0; transition: opacity 0.15s; }
+.app.focus .pane-bar:hover .meta { opacity: 1; }
+
+/* ---------- Pengaturan: tab ---------- */
+.dialog-head h2 { flex: none; margin-right: 14px; }
+.dialog-tabs { grid-template-columns: repeat(2, 1fr); width: 180px; }
+.dialog-head .spacer { flex: 1; }
+.dialog-body.single { display: block; overflow: auto; }
+
+/* ---------- Tab Data (P-5, P-6) ---------- */
+.data-settings { padding: 18px 22px 24px; display: flex; flex-direction: column; gap: 24px; max-width: 640px; user-select: text; }
+.data-settings section { display: flex; flex-direction: column; gap: 8px; }
+.data-settings .field-label { margin-bottom: 0; }
+.data-path {
+  font-family: var(--font-mono); font-size: 12.5px; padding: 8px 10px; border-radius: var(--radius-sm);
+  background: var(--field); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.data-note { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-3); }
+.data-note code, .data-warn code { font-family: var(--font-mono); font-size: 11.5px; word-break: break-all; }
+.data-warn { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--danger); word-break: break-word; }
+.data-ok { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--todo); word-break: break-word; }
+.data-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.backup-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border-soft); border-radius: var(--radius); }
+.backup-list li {
+  display: flex; gap: 12px; align-items: baseline; padding: 6px 10px; font-size: 12.5px; color: var(--text-3);
+}
+.backup-list li + li { border-top: 1px solid var(--border-soft); }
+.backup-name { font-family: var(--font-mono); font-size: 12px; color: var(--text-2); flex: none; }
+.backup-size { margin-left: auto; flex: none; }

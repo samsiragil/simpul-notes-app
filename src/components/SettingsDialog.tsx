@@ -1,9 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FONTS, STYLE_LIMITS, type FontKey } from "../config/style";
 import type { DoneMode } from "../lib/order";
 import { useApp } from "../store/app";
 import { useSettings } from "../store/settings";
+import { DataSettings } from "./DataSettings";
 import { IconClose } from "./Icons";
+
+type Tab = "style" | "data";
+const TABS: { key: Tab; label: string }[] = [
+  { key: "style", label: "Tampilan" },
+  { key: "data", label: "Data" },
+];
 
 const DONE_MODES: { key: DoneMode; label: string }[] = [
   { key: "bottom", label: "Pindah ke bawah" },
@@ -18,10 +25,12 @@ export function SettingsDialog() {
   const resetStyle = useSettings((s) => s.resetStyle);
   const todoDoneMode = useSettings((s) => s.todoDoneMode);
   const setTodoDoneMode = useSettings((s) => s.setTodoDoneMode);
+  const [tab, setTab] = useState<Tab>("style");
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    // Esc yang sudah ditangani dialog konfirmasi di dalamnya tidak ikut menutup pengaturan.
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !e.defaultPrevented && setOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, setOpen]);
@@ -30,14 +39,29 @@ export function SettingsDialog() {
 
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
-      <div className="dialog" role="dialog" aria-label="Pengaturan tampilan">
+      <div className="dialog" role="dialog" aria-label="Pengaturan">
         <div className="dialog-head">
-          <h2>Pengaturan · Tampilan</h2>
-          <button className="btn" onClick={resetStyle} style={{ marginRight: 8 }}>Kembalikan default</button>
+          <h2>Pengaturan</h2>
+          <div className="segmented dialog-tabs" role="tablist">
+            {TABS.map((t) => (
+              <button key={t.key} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "active" : ""} onClick={() => setTab(t.key)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <span className="spacer" />
+          {tab === "style" && (
+            <button className="btn" onClick={resetStyle} style={{ marginRight: 8 }}>Kembalikan default</button>
+          )}
           <button className="icon-btn" title="Tutup (Esc)" onClick={() => setOpen(false)}>
             <IconClose />
           </button>
         </div>
+        {tab === "data" ? (
+          <div className="dialog-body single">
+            <DataSettings />
+          </div>
+        ) : (
         <div className="dialog-body">
           <div className="settings-form">
             <div>
@@ -99,6 +123,7 @@ export function SettingsDialog() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

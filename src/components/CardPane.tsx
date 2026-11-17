@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Card } from "../db";
 import { NoteEditor } from "../editor/NoteEditor";
+import { registerFlush } from "../lib/dataOps";
 import { debounce, fullDate, relativeTime } from "../lib/util";
 import { selectedCard, useApp } from "../store/app";
 import { useSettings } from "../store/settings";
 import { GroupChips } from "./GroupChips";
-import { IconBack, IconFocus, IconLink, IconList, IconPin, IconRestore, IconSidebar, IconTrash } from "./Icons";
+import { IconBack, IconFocus, IconLink, IconList, IconPin, IconRestore, IconSearch, IconSidebar, IconTrash } from "./Icons";
 import { LinkedPanel } from "./LinkedPanel";
 import { focusFirstTodo, TodoList } from "./TodoList";
 import { TodoProgress } from "./TodoProgress";
@@ -20,25 +21,17 @@ export function CardPane() {
   const listOpen = useSettings((s) => s.listOpen);
   const sidebarOpen = useSettings((s) => s.sidebarOpen);
   const toggleList = useSettings((s) => s.toggleList);
-  const toggleSidebar = useSettings((s) => s.toggleSidebar);
-
-  const focusMode = !listOpen && !sidebarOpen;
-  const toggleFocus = () => {
-    if (focusMode) {
-      toggleSidebar();
-      toggleList();
-    } else {
-      if (sidebarOpen) toggleSidebar();
-      if (listOpen) toggleList();
-    }
-  };
+  const focusMode = useSettings((s) => s.focusMode);
+  const toggleFocus = useSettings((s) => s.toggleFocus);
+  const setSearchOpen = useApp((s) => s.setSearchOpen);
+  const listShown = listOpen && !focusMode;
 
   return (
     <main className="pane">
       <div className="pane-bar">
-        {!listOpen && (
+        {!listShown && (
           <button className="icon-btn" title="Tampilkan daftar (Ctrl+Shift+\)" onClick={toggleList}>
-            {sidebarOpen ? <IconList /> : <IconSidebar />}
+            {sidebarOpen && !focusMode ? <IconList /> : <IconSidebar />}
           </button>
         )}
         {canBack && (
@@ -47,8 +40,13 @@ export function CardPane() {
           </button>
         )}
         <span className="meta">{card ? `Diubah ${relativeTime(card.updatedAt).toLowerCase()}` : ""}</span>
+        {!listShown && (
+          <button className="icon-btn" title="Cari (Ctrl+K)" onClick={() => setSearchOpen(true)}>
+            <IconSearch />
+          </button>
+        )}
         {card && view !== "trash" && <CardActions card={card} />}
-        <button className={`icon-btn ${focusMode ? "on" : ""}`} title="Mode fokus (Ctrl+Shift+F)" onClick={toggleFocus}>
+        <button className={`icon-btn ${focusMode ? "on" : ""}`} title={focusMode ? "Keluar dari mode fokus (Ctrl+Shift+F / Esc)" : "Mode fokus (Ctrl+Shift+F)"} onClick={toggleFocus}>
           <IconFocus />
         </button>
       </div>
@@ -108,27 +106,34 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
   // Satu debouncer per card; perubahan judul + isi digabung lalu disimpan.
   const saver = useMemo(() => {
     let pending: { title?: string; body?: string } = {};
+    let inflight: Promise<void> = Promise.resolve();
     const d = debounce(() => {
       const patch = pending;
       pending = {};
-      void saveCard(card.id, patch);
+      inflight = saveCard(card.id, patch);
     }, AUTOSAVE_MS);
     return {
       queue(p: { title?: string; body?: string }) {
         pending = { ...pending, ...p };
         d();
       },
-      flush: () => d.flush(),
+      /** Tulis yang tertunda sekarang; selesai setelah tersimpan di database. */
+      flush: () => {
+        d.flush();
+        return inflight;
+      },
     };
   }, [card.id, saveCard]);
 
-  // Simpan yang tertunda saat pindah card atau jendela ditutup.
+  // Simpan yang tertunda saat pindah card, jendela ditutup, atau sebelum backup/export.
   useEffect(() => {
-    const onHide = () => saver.flush();
+    const onHide = () => void saver.flush();
     window.addEventListener("beforeunload", onHide);
+    const unregister = registerFlush(saver.flush);
     return () => {
       window.removeEventListener("beforeunload", onHide);
-      saver.flush();
+      unregister();
+      void saver.flush();
     };
   }, [saver]);
 

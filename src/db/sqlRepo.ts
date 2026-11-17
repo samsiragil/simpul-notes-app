@@ -1,5 +1,6 @@
 import Database from "@tauri-apps/plugin-sql";
-import { newId, now } from "../lib/util";
+import { ftsQuery, hasHit } from "../lib/search";
+import { markdownToText, newId, now } from "../lib/util";
 import type { Repos } from "./index";
 import {
   linkPair,
@@ -8,18 +9,18 @@ import {
   type CardRepo,
   type CardScope,
   type CardType,
+  type DataRepo,
   type Group,
   type GroupRepo,
   type LinkRepo,
   type NewCard,
   type NewTodoItem,
+  type SearchRepo,
+  type Snapshot,
   type TodoItem,
   type TodoItemPatch,
   type TodoRepo,
 } from "./types";
-
-/** Harus sama dengan DB_URL di src-tauri/src/lib.rs (migrasi dijalankan di sana). */
-const DB_URL = "sqlite:notes.db";
 
 interface CardRow {
   id: string;
@@ -123,15 +124,93 @@ const CARD_SELECT = `
     GROUP BY m.card_id
   ) gm ON gm.card_id = c.id`;
 
-export async function createSqlRepo(): Promise<Repos> {
-  const db = await Database.load(DB_URL);
+/**
+ * `dbUrl` berasal dari backend (`data_info`) dan harus sama persis dengan URL tempat
+ * migrasi didaftarkan di src-tauri/src/lib.rs (bergantung folder data, P-5).
+ */
+export async function createSqlRepo(dbUrl: string): Promise<Repos> {
+  const db = await Database.load(dbUrl);
   await db.execute("PRAGMA journal_mode = WAL");
   await db.execute("PRAGMA foreign_keys = ON");
 
-  return { cards: cardRepo(db), todos: todoRepo(db), links: linkRepo(db), groups: groupRepo(db) };
+  const index = searchIndex(db);
+  await index.ensure();
+
+  return {
+    cards: cardRepo(db, index),
+    todos: todoRepo(db, index),
+    links: linkRepo(db),
+    groups: groupRepo(db),
+    search: searchRepo(db),
+    data: dataRepo(db),
+  };
 }
 
-function cardRepo(db: Database): CardRepo {
+type SearchIndex = ReturnType<typeof searchIndex>;
+
+interface IndexRow {
+  id: string;
+  title: string;
+  body: string | null;
+  items: string | null;
+}
+
+/**
+ * Indeks FTS5 `card_fts` (S-3). Bukan data sinkron: isinya turunan dari card + todo_item,
+ * dipelihara di repository (tanpa trigger di tabel sinkron) dan bisa dibangun ulang kapan saja.
+ * Karena itu, khusus tabel ini baris lama dibuang dengan DELETE, bukan soft delete.
+ */
+function searchIndex(db: Database) {
+  const ITEMS_SQL = `
+    SELECT card_id, group_concat(text, char(10)) AS items
+    FROM (SELECT card_id, text FROM todo_item WHERE deleted_at IS NULL AND text <> '' ORDER BY card_id, position)
+    GROUP BY card_id`;
+
+  const doc = (r: IndexRow) => [r.id, r.title, markdownToText(r.body, true), r.items ?? ""];
+
+  const rebuild = async () => {
+    await db.execute("DELETE FROM card_fts");
+    const rows = await db.select<IndexRow[]>(
+      `SELECT c.id, c.title, c.body, i.items FROM card c LEFT JOIN (${ITEMS_SQL}) i ON i.card_id = c.id WHERE c.deleted_at IS NULL`,
+    );
+    const CHUNK = 100;
+    for (let at = 0; at < rows.length; at += CHUNK) {
+      const chunk = rows.slice(at, at + CHUNK);
+      const values = chunk.map((_, n) => `($${n * 4 + 1}, $${n * 4 + 2}, $${n * 4 + 3}, $${n * 4 + 4})`).join(", ");
+      await db.execute(`INSERT INTO card_fts (card_id, title, body, items) VALUES ${values}`, chunk.flatMap(doc));
+    }
+    return rows.length;
+  };
+
+  return {
+    /** Bangun ulang jika jumlah dokumen tidak sama dengan jumlah card (misal setelah migrasi). */
+    async ensure() {
+      const [r] = await db.select<{ cards: number; docs: number }[]>(
+        "SELECT (SELECT COUNT(*) FROM card WHERE deleted_at IS NULL) AS cards, (SELECT COUNT(*) FROM card_fts) AS docs",
+      );
+      if (r && r.cards !== r.docs) console.info(`Indeks pencarian dibangun ulang: ${await rebuild()} card`);
+    },
+
+    async index(cardId: string) {
+      const rows = await db.select<IndexRow[]>(
+        `SELECT c.id, c.title, c.body,
+                (SELECT group_concat(text, char(10)) FROM (
+                   SELECT text FROM todo_item WHERE card_id = c.id AND deleted_at IS NULL AND text <> '' ORDER BY position
+                 )) AS items
+         FROM card c WHERE c.id = $1 AND c.deleted_at IS NULL`,
+        [cardId],
+      );
+      await db.execute("DELETE FROM card_fts WHERE card_id = $1", [cardId]);
+      if (rows[0]) await db.execute("INSERT INTO card_fts (card_id, title, body, items) VALUES ($1, $2, $3, $4)", doc(rows[0]));
+    },
+
+    async drop(cardId: string) {
+      await db.execute("DELETE FROM card_fts WHERE card_id = $1", [cardId]);
+    },
+  };
+}
+
+function cardRepo(db: Database, index: SearchIndex): CardRepo {
   const get = async (id: string): Promise<Card | null> => {
     const rows = await db.select<CardRow[]>(`${CARD_SELECT} WHERE c.id = $1 AND c.deleted_at IS NULL`, [id]);
     return rows[0] ? toCard(rows[0]) : null;
@@ -145,6 +224,7 @@ function cardRepo(db: Database): CardRepo {
       await db.execute("UPDATE todo_item SET deleted_at = $1, updated_at = $1 WHERE card_id = $2 AND deleted_at IS NULL", [t, id]);
       await db.execute("UPDATE link SET deleted_at = $1, updated_at = $1 WHERE (card_a = $2 OR card_b = $2) AND deleted_at IS NULL", [t, id]);
       await db.execute("UPDATE group_member SET deleted_at = $1, updated_at = $1 WHERE card_id = $2 AND deleted_at IS NULL", [t, id]);
+      await index.drop(id);
     }
   };
 
@@ -165,6 +245,7 @@ function cardRepo(db: Database): CardRepo {
         "INSERT INTO card (id, type, title, body, pinned, created_at, updated_at) VALUES ($1, $2, $3, $4, 0, $5, $5)",
         [id, type, init.title ?? "", type === "note" ? "" : null, t],
       );
+      await index.index(id);
       return (await get(id))!;
     },
 
@@ -181,6 +262,7 @@ function cardRepo(db: Database): CardRepo {
       add("updated_at", now());
       params.push(id);
       await db.execute(`UPDATE card SET ${sets.join(", ")} WHERE id = $${params.length}`, params);
+      if (patch.title !== undefined || patch.body !== undefined) await index.index(id);
       return (await get(id))!;
     },
 
@@ -209,7 +291,7 @@ function cardRepo(db: Database): CardRepo {
   };
 }
 
-function todoRepo(db: Database): TodoRepo {
+function todoRepo(db: Database, index: SearchIndex): TodoRepo {
   const get = async (id: string): Promise<TodoItem> => {
     const rows = await db.select<TodoItemRow[]>("SELECT * FROM todo_item WHERE id = $1 AND deleted_at IS NULL", [id]);
     if (!rows[0]) throw new Error(`Item todo ${id} tidak ditemukan`);
@@ -238,6 +320,7 @@ function todoRepo(db: Database): TodoRepo {
         [item.id, item.cardId, item.text, item.position, t],
       );
       await touchCardOf(item.id, t);
+      if (item.text) await index.index(item.cardId);
       return get(item.id);
     },
 
@@ -259,13 +342,17 @@ function todoRepo(db: Database): TodoRepo {
       params.push(id);
       await db.execute(`UPDATE todo_item SET ${sets.join(", ")} WHERE id = $${params.length}`, params);
       await touchCardOf(id, t);
-      return get(id);
+      const item = await get(id);
+      if (patch.text !== undefined) await index.index(item.cardId);
+      return item;
     },
 
     async remove(id: string) {
       const t = now();
       await db.execute("UPDATE todo_item SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND deleted_at IS NULL", [t, id]);
       await touchCardOf(id, t);
+      const [row] = await db.select<{ card_id: string }[]>("SELECT card_id FROM todo_item WHERE id = $1", [id]);
+      if (row) await index.index(row.card_id);
     },
 
     async rebalance(cardId: string) {
@@ -401,6 +488,90 @@ function groupRepo(db: Database): GroupRepo {
         "UPDATE group_member SET deleted_at = $1, updated_at = $1 WHERE group_id = $2 AND card_id = $3 AND deleted_at IS NULL",
         [t, groupId, cardId],
       );
+    },
+  };
+}
+
+/** S-3, S-4: pencarian FTS5 atas judul, isi Note, dan item Todo; card di Trash tidak ikut. */
+function searchRepo(db: Database): SearchRepo {
+  return {
+    async search(query, filter, limit = 50) {
+      const match = ftsQuery(query);
+      if (!match) return [];
+      const params: unknown[] = [match];
+      let where = "";
+      if (filter.type) {
+        params.push(filter.type);
+        where += ` AND c.type = $${params.length}`;
+      }
+      if (filter.groupId) {
+        params.push(filter.groupId);
+        where += ` AND EXISTS (
+          SELECT 1 FROM group_member m JOIN grp g ON g.id = m.group_id
+          WHERE m.card_id = c.id AND m.group_id = $${params.length} AND m.deleted_at IS NULL AND g.deleted_at IS NULL)`;
+      }
+      params.push(limit);
+      // Kolom card_fts: 0 card_id, 1 title, 2 body, 3 items. Judul diberi bobot paling tinggi.
+      const rows = await db.select<{ id: string; title: string; body: string; items: string }[]>(
+        `SELECT card_fts.card_id AS id,
+                highlight(card_fts, 1, char(1), char(2)) AS title,
+                snippet(card_fts, 2, char(1), char(2), '…', 14) AS body,
+                snippet(card_fts, 3, char(1), char(2), '…', 14) AS items
+         FROM card_fts
+         JOIN card c ON c.id = card_fts.card_id
+         WHERE card_fts MATCH $1 AND c.deleted_at IS NULL AND c.trashed_at IS NULL${where}
+         ORDER BY bm25(card_fts, 0.0, 8.0, 1.0, 2.0), c.updated_at DESC
+         LIMIT $${params.length}`,
+        params,
+      );
+      return rows.map((r) => ({
+        cardId: r.id,
+        title: r.title,
+        snippet: hasHit(r.body) ? r.body : hasHit(r.items) ? r.items.replace(/\n/g, " · ") : "",
+      }));
+    },
+  };
+}
+
+function dataRepo(db: Database): DataRepo {
+  return {
+    async snapshot(): Promise<Snapshot> {
+      const [cards, items, links, groups, members] = await Promise.all([
+        db.select<CardRow[]>("SELECT * FROM card WHERE deleted_at IS NULL ORDER BY created_at, id"),
+        db.select<TodoItemRow[]>(
+          `SELECT i.* FROM todo_item i JOIN card c ON c.id = i.card_id
+           WHERE i.deleted_at IS NULL AND c.deleted_at IS NULL ORDER BY i.card_id, i.position`,
+        ),
+        db.select<{ card_a: string; card_b: string; created_at: number; updated_at: number }[]>(
+          "SELECT card_a, card_b, created_at, updated_at FROM link WHERE deleted_at IS NULL ORDER BY created_at",
+        ),
+        db.select<GroupRow[]>("SELECT * FROM grp WHERE deleted_at IS NULL ORDER BY position, id"),
+        db.select<{ group_id: string; card_id: string; created_at: number; updated_at: number }[]>(
+          `SELECT m.group_id, m.card_id, m.created_at, m.updated_at FROM group_member m JOIN grp g ON g.id = m.group_id
+           WHERE m.deleted_at IS NULL AND g.deleted_at IS NULL ORDER BY m.created_at`,
+        ),
+      ]);
+      return {
+        cards: cards.map((r) => ({
+          id: r.id,
+          type: r.type,
+          title: r.title,
+          body: r.body,
+          pinned: !!r.pinned,
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+          trashedAt: r.trashed_at,
+        })),
+        todoItems: items.map(toItem),
+        links: links.map((l) => ({ cardA: l.card_a, cardB: l.card_b, createdAt: l.created_at, updatedAt: l.updated_at })),
+        groups: groups.map(toGroup),
+        groupMembers: members.map((m) => ({ groupId: m.group_id, cardId: m.card_id, createdAt: m.created_at, updatedAt: m.updated_at })),
+      };
+    },
+
+    /** Salinan konsisten meski WAL aktif; dipakai backup harian dan pindah folder data. */
+    async copyTo(path: string) {
+      await db.execute("VACUUM INTO $1", [path]);
     },
   };
 }

@@ -123,3 +123,59 @@ export interface GroupRepo {
 export function linkPair(a: string, b: string): [string, string] {
   return a < b ? [a, b] : [b, a];
 }
+
+export interface SearchFilter {
+  /** S-4: hanya Note atau hanya Todo; `null` = semua tipe. */
+  type: CardType | null;
+  /** S-4: hanya card di group ini; `null` = semua group. */
+  groupId: string | null;
+}
+
+/**
+ * Hasil pencarian (S-3). Bagian yang cocok di `title` dan `snippet` diapit penanda
+ * `HIT_START` / `HIT_END` (lihat `src/lib/search.ts`) agar UI bisa menyorotnya.
+ */
+export interface SearchHit {
+  cardId: string;
+  title: string;
+  /** Potongan isi Note atau item Todo yang cocok; kosong jika hanya judul yang cocok. */
+  snippet: string;
+}
+
+/** Pencarian card aktif (tidak di Trash) atas judul, isi Note, dan item Todo. */
+export interface SearchRepo {
+  search(query: string, filter: SearchFilter, limit?: number): Promise<SearchHit[]>;
+}
+
+/** Baris data tanpa kolom turunan; dipakai Export (P-6). Tombstone tidak ikut. */
+export type SnapshotCard = Omit<Card, "progress" | "linkCount" | "groupIds" | "deletedAt">;
+
+export interface SnapshotLink {
+  cardA: string;
+  cardB: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SnapshotMember {
+  groupId: string;
+  cardId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Snapshot {
+  cards: SnapshotCard[];
+  todoItems: TodoItem[];
+  links: SnapshotLink[];
+  groups: Group[];
+  groupMembers: SnapshotMember[];
+}
+
+/** Operasi atas seluruh data: export (P-6) dan salinan database (backup, pindah folder P-5). */
+export interface DataRepo {
+  /** Semua card (termasuk Trash) beserta item, link, dan group yang belum dihapus. */
+  snapshot(): Promise<Snapshot>;
+  /** Salinan database yang konsisten ke file baru (`VACUUM INTO`). File tujuan belum boleh ada. */
+  copyTo(path: string): Promise<void>;
+}

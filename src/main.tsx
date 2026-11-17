@@ -6,6 +6,7 @@ import "./styles/app.css";
 import "./styles/note.css";
 import "./styles/todo.css";
 import "./styles/relations.css";
+import "./styles/search.css";
 import App from "./App";
 import { initRepo } from "./db";
 import { useApp } from "./store/app";

@@ -1,10 +1,10 @@
 import { useDraggable } from "@dnd-kit/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import type { Card } from "../db";
 import { relativeTime, snippetFromMarkdown } from "../lib/util";
 import { useApp, visibleCards, type TypeFilter } from "../store/app";
-import { useSettings } from "../store/settings";
-import { IconLink, IconList, IconNote, IconPin, IconPlus, IconSidebar, IconTodo } from "./Icons";
+import { LIST_WIDTH, useSettings } from "../store/settings";
+import { IconLink, IconList, IconNote, IconPin, IconPlus, IconSearch, IconSidebar, IconTodo } from "./Icons";
 import { TodoProgress } from "./TodoProgress";
 
 const FILTERS: { key: TypeFilter; label: string }[] = [
@@ -31,6 +31,7 @@ export function CardList() {
   const select = useApp((s) => s.select);
   const setTypeFilter = useApp((s) => s.setTypeFilter);
   const createCard = useApp((s) => s.createCard);
+  const setSearchOpen = useApp((s) => s.setSearchOpen);
   const sidebarOpen = useSettings((s) => s.sidebarOpen);
   const toggleSidebar = useSettings((s) => s.toggleSidebar);
   const toggleList = useSettings((s) => s.toggleList);
@@ -78,6 +79,12 @@ export function CardList() {
             <IconList />
           </button>
         </div>
+        <button className="search-trigger" onClick={() => setSearchOpen(true)} title="Cari judul, isi Note, dan item Todo">
+          <IconSearch size={13} />
+          <span>Cari</span>
+          <span className="kbd">Ctrl</span>
+          <span className="kbd">K</span>
+        </button>
         {!isTrash && (
           <div className="segmented" role="tablist">
             {FILTERS.map((f) => (
@@ -120,7 +127,43 @@ export function CardList() {
           <Row key={c.id} card={c} active={c.id === selectedId} onClick={() => select(c.id)} timeOf={isTrash ? c.trashedAt ?? c.updatedAt : c.updatedAt} draggable={!isTrash} />
         ))}
       </div>
+      <ListResizer />
     </section>
+  );
+}
+
+/** P-4: lebar daftar card bisa diubah dengan menyeret tepi kanan; klik dua kali = lebar bawaan. */
+function ListResizer() {
+  const setListWidth = useSettings((s) => s.setListWidth);
+  const drag = useRef<{ x: number; w: number } | null>(null);
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { x: e.clientX, w: useSettings.getState().listWidth };
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (drag.current) setListWidth(drag.current.w + e.clientX - drag.current.x, false);
+  };
+  const onPointerUp = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    setListWidth(useSettings.getState().listWidth);
+  };
+
+  return (
+    <div
+      className="list-resizer"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Ubah lebar daftar"
+      title="Seret untuk mengubah lebar. Klik dua kali untuk lebar bawaan."
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onDoubleClick={() => setListWidth(LIST_WIDTH.default)}
+    />
   );
 }
 

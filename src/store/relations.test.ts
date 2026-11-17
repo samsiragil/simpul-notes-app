@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cards, groups, initRepo, linkPair, links } from "../db";
 import { useApp, visibleCards } from "./app";
+import { useSettings } from "./settings";
 
 // memoryRepo memakai localStorage; di Node cukup Map sederhana.
 const mem = new Map<string, string>();
@@ -23,6 +24,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  // init() memulihkan tampilan terakhir (P-4); mulai setiap test dari Semua.
+  useSettings.setState({ lastView: { view: "all", groupId: null }, lastCardId: null });
   useApp.setState({ view: "all", groupId: null, typeFilter: "all", selectedId: null, history: [], linkedIds: [] });
   await app().init();
 });
@@ -167,5 +170,22 @@ describe("store: tampilan dan navigasi", () => {
     await app().moveGroup(y.id, before);
     const ids = app().groups.map((g) => g.id);
     expect(ids.indexOf(y.id)).toBeLessThan(ids.indexOf(x.id));
+  });
+});
+
+describe("P-4: ingat tampilan terakhir", () => {
+  it("init membuka group terakhir; group yang sudah dihapus kembali ke Semua", async () => {
+    const g = await app().createGroup("Ingat");
+    await app().setView("group", g!.id);
+    expect(useSettings.getState().lastView).toEqual({ view: "group", groupId: g!.id });
+
+    useApp.setState({ view: "all", groupId: null });
+    await app().init();
+    expect(app().view).toBe("group");
+    expect(app().groupId).toBe(g!.id);
+
+    await groups().remove(g!.id);
+    await app().init();
+    expect(app().view).toBe("all");
   });
 });

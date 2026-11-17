@@ -1,6 +1,6 @@
 import { isTauri } from "../lib/util";
 import { createMemoryRepo } from "./memoryRepo";
-import type { CardRepo, GroupRepo, LinkRepo, TodoRepo } from "./types";
+import type { CardRepo, DataRepo, GroupRepo, LinkRepo, SearchRepo, TodoRepo } from "./types";
 
 export * from "./types";
 
@@ -9,6 +9,8 @@ export interface Repos {
   todos: TodoRepo;
   links: LinkRepo;
   groups: GroupRepo;
+  search: SearchRepo;
+  data: DataRepo;
 }
 
 let repos: Repos | null = null;
@@ -17,8 +19,8 @@ let repos: Repos | null = null;
 export async function initRepo(): Promise<void> {
   if (repos) return;
   if (isTauri()) {
-    const { createSqlRepo } = await import("./sqlRepo");
-    repos = await createSqlRepo();
+    const [{ createSqlRepo }, { dataInfo }] = await Promise.all([import("./sqlRepo"), import("../lib/native")]);
+    repos = await createSqlRepo((await dataInfo()).dbUrl);
   } else {
     repos = createMemoryRepo();
   }
@@ -33,3 +35,5 @@ export const cards = (): CardRepo => ready().cards;
 export const todos = (): TodoRepo => ready().todos;
 export const links = (): LinkRepo => ready().links;
 export const groups = (): GroupRepo => ready().groups;
+export const search = (): SearchRepo => ready().search;
+export const data = (): DataRepo => ready().data;

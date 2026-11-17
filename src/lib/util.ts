@@ -31,11 +31,11 @@ export function fullDate(ms: number): string {
   });
 }
 
-/** Potongan teks polos dari Markdown, untuk preview di daftar card. */
-export function snippetFromMarkdown(md: string | null, max = 140): string {
+/** Teks polos dari Markdown. `keepCode`: isi code block ikut (untuk indeks pencarian S-3). */
+export function markdownToText(md: string | null, keepCode = false): string {
   if (!md) return "";
-  const text = md
-    .replace(/```[\s\S]*?```/g, " ")
+  return md
+    .replace(keepCode ? /^\s*```.*$/gm : /```[\s\S]*?```/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
@@ -49,6 +49,11 @@ export function snippetFromMarkdown(md: string | null, max = 140): string {
     .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** Potongan teks polos dari Markdown, untuk preview di daftar card. */
+export function snippetFromMarkdown(md: string | null, max = 140): string {
+  const text = markdownToText(md);
   return text.length > max ? text.slice(0, max).trimEnd() + "…" : text;
 }
 

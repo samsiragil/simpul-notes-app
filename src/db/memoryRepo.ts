@@ -1,4 +1,5 @@
-import { newId, now } from "../lib/util";
+import { markHits, markSnippet, matchesAll, searchTerms } from "../lib/search";
+import { markdownToText, newId, now } from "../lib/util";
 import type { Repos } from "./index";
 import {
   linkPair,
@@ -7,11 +8,13 @@ import {
   type CardRepo,
   type CardScope,
   type CardType,
+  type DataRepo,
   type Group,
   type GroupRepo,
   type LinkRepo,
   type NewCard,
   type NewTodoItem,
+  type SearchRepo,
   type TodoItem,
   type TodoItemPatch,
   type TodoRepo,
@@ -326,5 +329,51 @@ export function createMemoryRepo(): Repos {
     },
   };
 
-  return { cards: cardRepo, todos: todoRepo, links: linkRepo, groups: groupRepo };
+  // Setara FTS5 di sqlRepo: semua kata harus cocok sebagai awal kata; judul didahulukan.
+  const searchRepo: SearchRepo = {
+    async search(query, filter, limit = 50) {
+      const terms = searchTerms(query);
+      if (!terms.length) return [];
+      const hits = alive()
+        .filter((c) => c.trashedAt === null)
+        .filter((c) => !filter.type || c.type === filter.type)
+        .filter((c) => !filter.groupId || groupIdsOf(c.id).includes(filter.groupId))
+        .map((c) => {
+          const body = markdownToText(c.body, true);
+          const itemText = aliveItems(c.id)
+            .map((i) => i.text)
+            .filter(Boolean)
+            .join(" \u00b7 ");
+          return { c, body, itemText, inTitle: matchesAll([c.title], terms) };
+        })
+        .filter((x) => matchesAll([x.c.title, x.body, x.itemText], terms))
+        .sort((a, b) => Number(b.inTitle) - Number(a.inTitle) || b.c.updatedAt - a.c.updatedAt)
+        .slice(0, limit);
+      return hits.map(({ c, body, itemText }) => ({
+        cardId: c.id,
+        title: markHits(c.title, terms),
+        snippet: markSnippet(body, terms) || markSnippet(itemText, terms),
+      }));
+    },
+  };
+
+  const dataRepo: DataRepo = {
+    async snapshot() {
+      const live = alive();
+      const ids = new Set(live.map((c) => c.id));
+      const liveGroups = new Set(aliveGroups().map((g) => g.id));
+      return {
+        cards: live.map(({ deletedAt: _, ...c }) => c),
+        todoItems: items.filter((i) => i.deletedAt === null && ids.has(i.cardId)).map(toItem),
+        links: links.filter((l) => l.deletedAt === null).map(({ deletedAt: _, ...l }) => l),
+        groups: aliveGroups().map(toGroup),
+        groupMembers: members.filter((m) => m.deletedAt === null && liveGroups.has(m.groupId)).map(({ deletedAt: _, ...m }) => m),
+      };
+    },
+    async copyTo() {
+      throw new Error("Salinan database hanya tersedia di aplikasi desktop");
+    },
+  };
+
+  return { cards: cardRepo, todos: todoRepo, links: linkRepo, groups: groupRepo, search: searchRepo, data: dataRepo };
 }

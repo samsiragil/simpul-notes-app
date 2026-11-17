@@ -34,6 +34,8 @@ interface AppState {
   /** L-3: ID card yang terhubung ke card terbuka (tanpa card di Trash, L-6). */
   linkedIds: string[];
   linkDialogOpen: boolean;
+  /** S-3: command palette pencarian `Ctrl+K`. */
+  searchOpen: boolean;
   settingsOpen: boolean;
   /** Fokuskan judul setelah card baru dibuat. */
   focusTitleId: string | null;
@@ -45,6 +47,8 @@ interface AppState {
   select(id: string | null): void;
   /** Buka card mana pun (misal dari panel Terhubung); pindah dari Trash ke Semua bila perlu. */
   openCard(id: string): void;
+  /** Buka card dari hasil pencarian; pindah ke Semua jika card tidak tampil di daftar saat ini. */
+  revealCard(id: string): void;
   /** L-4: kembali ke card sebelumnya (`Alt+Left`). */
   back(): void;
   createCard(type: CardType, opts?: NewCardOptions): Promise<void>;
@@ -74,6 +78,7 @@ interface AppState {
   /** G-4 */
   removeFromGroup(cardId: string, groupId: string): Promise<void>;
 
+  setSearchOpen(open: boolean): void;
   setSettingsOpen(open: boolean): void;
   consumeFocusTitle(): void;
 }
@@ -120,6 +125,7 @@ export const useApp = create<AppState>((set, get) => {
     history: [],
     linkedIds: [],
     linkDialogOpen: false,
+    searchOpen: false,
     settingsOpen: false,
     focusTitleId: null,
 
@@ -128,9 +134,14 @@ export const useApp = create<AppState>((set, get) => {
         const purged = await cards().purgeTrash(30);
         if (purged) console.info(`Trash: ${purged} card lama dihapus permanen`);
         const [list, trashed, groupList] = await Promise.all([cards().list("active"), cards().list("trash"), groups().list()]);
-        const last = useSettings.getState().lastCardId;
-        const selectedId = list.find((c) => c.id === last)?.id ?? list[0]?.id ?? null;
-        set({ list, trashed, groups: groupList, selectedId, ready: true });
+        const { lastCardId: last, lastView } = useSettings.getState();
+        // P-4: kembali ke tampilan dan card terakhir.
+        const groupOk = lastView.view !== "group" || groupList.some((g) => g.id === lastView.groupId);
+        const view: View = groupOk ? lastView.view : "all";
+        const groupId = view === "group" ? lastView.groupId : null;
+        const visible = visibleCards({ list, trashed, view, groupId, typeFilter: "all" });
+        const selectedId = list.find((c) => c.id === last)?.id ?? visible[0]?.id ?? null;
+        set({ list, trashed, groups: groupList, view, groupId, selectedId, ready: true });
         void get().loadLinks();
       } catch (e) {
         set({ error: String(e), ready: true });
@@ -144,6 +155,7 @@ export const useApp = create<AppState>((set, get) => {
 
     async setView(view, groupId = null) {
       set({ view, groupId: view === "group" ? groupId : null, typeFilter: "all" });
+      if (view !== "trash") useSettings.getState().setLastView({ view, groupId: get().groupId });
       await get().refresh();
       const visible = visibleCards(get());
       const { selectedId } = get();
@@ -165,6 +177,14 @@ export const useApp = create<AppState>((set, get) => {
 
     openCard(id) {
       if (get().view === "trash") set({ view: "all", groupId: null, typeFilter: "all" });
+      get().select(id);
+    },
+
+    revealCard(id) {
+      if (!visibleCards(get()).some((c) => c.id === id)) {
+        set({ view: "all", groupId: null, typeFilter: "all" });
+        useSettings.getState().setLastView({ view: "all", groupId: null });
+      }
       get().select(id);
     },
 
@@ -315,6 +335,10 @@ export const useApp = create<AppState>((set, get) => {
     async removeFromGroup(cardId, groupId) {
       await groups().removeCard(groupId, cardId);
       await get().refresh();
+    },
+
+    setSearchOpen(searchOpen) {
+      set({ searchOpen });
     },
 
     setSettingsOpen(settingsOpen) {
