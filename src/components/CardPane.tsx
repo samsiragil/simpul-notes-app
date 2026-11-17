@@ -2,17 +2,21 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Card } from "../db";
 import { NoteEditor } from "../editor/NoteEditor";
 import { debounce, fullDate, relativeTime } from "../lib/util";
-import { useApp } from "../store/app";
+import { selectedCard, useApp } from "../store/app";
 import { useSettings } from "../store/settings";
-import { IconFocus, IconList, IconPin, IconRestore, IconSidebar, IconTrash } from "./Icons";
+import { GroupChips } from "./GroupChips";
+import { IconBack, IconFocus, IconLink, IconList, IconPin, IconRestore, IconSidebar, IconTrash } from "./Icons";
+import { LinkedPanel } from "./LinkedPanel";
 import { focusFirstTodo, TodoList } from "./TodoList";
 import { TodoProgress } from "./TodoProgress";
 
 const AUTOSAVE_MS = 800;
 
 export function CardPane() {
-  const card = useApp((s) => s.list.find((c) => c.id === s.selectedId) ?? null);
+  const card = useApp(selectedCard);
   const view = useApp((s) => s.view);
+  const canBack = useApp((s) => s.history.length > 0 && s.view !== "trash");
+  const back = useApp((s) => s.back);
   const listOpen = useSettings((s) => s.listOpen);
   const sidebarOpen = useSettings((s) => s.sidebarOpen);
   const toggleList = useSettings((s) => s.toggleList);
@@ -37,8 +41,13 @@ export function CardPane() {
             {sidebarOpen ? <IconList /> : <IconSidebar />}
           </button>
         )}
+        {canBack && (
+          <button className="icon-btn" title="Kembali (Alt+←)" onClick={back}>
+            <IconBack />
+          </button>
+        )}
         <span className="meta">{card ? `Diubah ${relativeTime(card.updatedAt).toLowerCase()}` : ""}</span>
-        {card && view === "all" && <CardActions card={card} />}
+        {card && view !== "trash" && <CardActions card={card} />}
         <button className={`icon-btn ${focusMode ? "on" : ""}`} title="Mode fokus (Ctrl+Shift+F)" onClick={toggleFocus}>
           <IconFocus />
         </button>
@@ -69,8 +78,12 @@ export function CardPane() {
 function CardActions({ card }: { card: Card }) {
   const togglePin = useApp((s) => s.togglePin);
   const trashCard = useApp((s) => s.trashCard);
+  const setLinkDialogOpen = useApp((s) => s.setLinkDialogOpen);
   return (
     <>
+      <button className="icon-btn" title="Hubungkan card (Ctrl+L)" onClick={() => setLinkDialogOpen(true)}>
+        <IconLink />
+      </button>
       <button className={`icon-btn ${card.pinned ? "on" : ""}`} title={card.pinned ? "Lepas sematan" : "Sematkan di atas"} onClick={() => togglePin(card.id)}>
         <IconPin filled={card.pinned} />
       </button>
@@ -188,6 +201,7 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
           <span className={`chip-type ${card.type}`}>{card.type === "note" ? "Note" : "Todo"}</span>
           <span title={`Dibuat ${fullDate(card.createdAt)}`}>{fullDate(card.updatedAt)}</span>
           {card.progress && <TodoProgress progress={card.progress} />}
+          <GroupChips card={card} readOnly={readOnly} />
         </div>
 
         {card.type === "note" ? (
@@ -200,6 +214,8 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
         ) : (
           <TodoList cardId={card.id} readOnly={readOnly} />
         )}
+
+        {!readOnly && <LinkedPanel card={card} />}
       </div>
     </div>
   );

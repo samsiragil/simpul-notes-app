@@ -1,0 +1,151 @@
+/* Link dan Group (PRD M3: L-1..L-7, G-1..G-7) */
+
+/* ---------- Sidebar: group ---------- */
+.nav-label.with-action { display: flex; align-items: center; justify-content: space-between; padding-right: 2px; }
+.icon-btn.small { width: 22px; height: 22px; }
+.nav.groups { min-height: 0; overflow: auto; }
+.group-item { position: relative; }
+.group-item .nav-item { padding-right: 30px; touch-action: none; }
+.group-item .nav-item .count { transition: opacity 0.1s; }
+.group-item .group-more { position: absolute; right: 4px; top: 5px; opacity: 0; }
+.group-item:hover .group-more,
+.group-item .group-more:focus-visible { opacity: 1; }
+.group-item:hover .nav-item .count { opacity: 0; }
+.group-item.dragging { opacity: 0.5; z-index: 1; }
+.nav-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-item.drop-target { background: var(--todo-tint); box-shadow: inset 0 0 0 1px var(--todo); color: var(--text); }
+.nav-input {
+  height: 32px; width: 100%; padding: 0 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--note); background: var(--surface); outline: none; font-size: 13.5px;
+}
+
+/* ---------- Daftar card ---------- */
+.row { touch-action: none; }
+.row.dragging { opacity: 0.45; }
+.row-links { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; color: var(--text-4); flex: none; }
+.drag-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; max-width: 260px;
+  border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(34, 33, 31, 0.14); font-weight: 600; font-size: 13px; cursor: grabbing;
+}
+.drag-chip span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Chip group di card ---------- */
+.card-meta { flex-wrap: wrap; row-gap: 6px; }
+.group-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.chip-group {
+  display: inline-flex; align-items: center; border-radius: 999px; background: var(--field);
+  color: var(--text-2); font-size: 11.5px; font-weight: 500;
+}
+.chip-group-name {
+  display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; cursor: pointer;
+  padding: 2px 4px 2px 8px; font-size: inherit; color: inherit;
+}
+.chip-group-name:hover { color: var(--text); }
+.chip-group-x {
+  display: inline-flex; border: 0; background: none; cursor: pointer; padding: 3px 6px 3px 2px; color: var(--text-4);
+}
+.chip-group-x:hover { color: var(--danger); }
+.chip-add {
+  display: inline-flex; align-items: center; gap: 4px; border: 1px dashed var(--border); background: none;
+  border-radius: 999px; padding: 1px 8px; font-size: 11.5px; color: var(--text-3); cursor: pointer;
+}
+.chip-add:hover { border-color: #d6d2cb; color: var(--text-2); }
+.group-menu-anchor { position: relative; display: inline-flex; }
+
+/* ---------- Menu kecil ---------- */
+.menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; width: 240px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(34, 33, 31, 0.12); padding: 6px; display: flex; flex-direction: column; gap: 4px;
+}
+.menu.right { left: auto; right: 0; top: 30px; width: 170px; }
+.menu-input {
+  height: 30px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface); outline: none; font-size: 13px;
+}
+.menu-input:focus { border-color: var(--note); }
+.menu-list { display: flex; flex-direction: column; max-height: 240px; overflow: auto; }
+.menu-item {
+  display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border: 0; background: none;
+  border-radius: var(--radius-sm); cursor: pointer; text-align: left; font-size: 13px; color: var(--text);
+}
+.menu-item:hover, .menu-item:focus-visible { background: var(--hover); outline: none; }
+.menu-item.danger { color: var(--danger); }
+.menu-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-empty { padding: 8px; font-size: 12px; color: var(--text-3); line-height: 1.45; }
+
+/* Kotak centang pilihan (dialog Hubungkan, menu group) */
+.pick {
+  width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid #cfcac2;
+  display: inline-flex; align-items: center; justify-content: center; color: #fff;
+}
+.pick.on { background: var(--note); border-color: var(--note); }
+.pick.ghost { border-style: dashed; color: var(--text-3); }
+
+/* ---------- Panel Terhubung ---------- */
+.linked { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border-soft); font-family: var(--font-ui); }
+.linked-head { display: flex; align-items: center; gap: 8px; color: var(--text-3); margin-bottom: 8px; }
+.linked-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.linked-count { font-size: 12px; color: var(--text-4); }
+.linked-head .spacer { flex: 1; }
+.ghost-btn {
+  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px; border: 0; background: none;
+  border-radius: var(--radius-sm); font-size: 12.5px; color: var(--text-3); cursor: pointer;
+}
+.ghost-btn:hover { background: var(--hover); color: var(--text-2); }
+.linked-empty { font-size: 13px; color: var(--text-3); line-height: 1.6; padding: 4px 0; }
+.linked-list { display: flex; flex-direction: column; gap: 2px; }
+.linked-row-wrap { position: relative; display: flex; align-items: center; }
+.linked-row {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 40px 0 10px;
+  border: 0; background: none; border-radius: var(--radius); cursor: pointer; text-align: left; font-size: 13.5px;
+}
+.linked-row:hover, .linked-row:focus-visible { background: var(--hover); outline: none; }
+.linked-title { flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.linked-title.untitled { color: var(--text-3); }
+.linked-row-wrap .unlink { position: absolute; right: 6px; opacity: 0; }
+.linked-row-wrap:hover .unlink,
+.linked-row-wrap .unlink:focus-visible,
+.linked-row:focus-visible + .unlink { opacity: 1; }
+.linked-row-wrap .unlink:hover { color: var(--danger); }
+
+/* ---------- Dialog Hubungkan (palette) ---------- */
+.overlay.top { align-items: flex-start; padding-top: 12vh; }
+.palette {
+  width: min(600px, calc(100vw - 48px)); max-height: 70vh; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(34, 33, 31, 0.16); overflow: hidden;
+}
+.palette-head { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-bottom: 1px solid var(--border-soft); }
+.palette-input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font-size: 15px; height: 32px; }
+.palette-input::placeholder { color: var(--text-4); }
+.palette-body { flex: 1; min-height: 0; overflow: auto; padding: 6px; }
+.palette-empty { padding: 18px 12px; font-size: 13px; color: var(--text-3); text-align: center; }
+.palette-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer;
+}
+.palette-row.active { background: var(--hover); }
+.palette-row.create { color: var(--todo); }
+.palette-row.create .palette-title { color: var(--text); }
+.palette-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.palette-title { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.palette-title.untitled { color: var(--text-3); font-weight: 500; }
+.palette-snippet { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.palette mark { background: var(--highlight); color: inherit; border-radius: 2px; }
+.palette-foot {
+  display: flex; align-items: center; gap: 14px; padding: 8px 10px 8px 16px; border-top: 1px solid var(--border-soft);
+  font-size: 12px; color: var(--text-3); background: var(--bg-list);
+}
+.palette-foot .spacer { flex: 1; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+
+/* ---------- Dialog konfirmasi ---------- */
+.confirm {
+  width: min(400px, calc(100vw - 48px)); background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: 0 20px 50px rgba(34, 33, 31, 0.12); padding: 20px 22px 18px;
+}
+.confirm h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+.confirm p { margin: 0 0 18px; font-size: 13px; line-height: 1.55; color: var(--text-2); }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.btn.danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }

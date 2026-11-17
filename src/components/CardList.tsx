@@ -1,9 +1,10 @@
+import { useDraggable } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
 import type { Card } from "../db";
 import { relativeTime, snippetFromMarkdown } from "../lib/util";
 import { useApp, visibleCards, type TypeFilter } from "../store/app";
 import { useSettings } from "../store/settings";
-import { IconList, IconNote, IconPin, IconPlus, IconSidebar, IconTodo } from "./Icons";
+import { IconLink, IconList, IconNote, IconPin, IconPlus, IconSidebar, IconTodo } from "./Icons";
 import { TodoProgress } from "./TodoProgress";
 
 const FILTERS: { key: TypeFilter; label: string }[] = [
@@ -16,9 +17,15 @@ export function TypeIcon({ type }: { type: Card["type"] }) {
   return <span className={`type-dot ${type}`}>{type === "note" ? <IconNote /> : <IconTodo />}</span>;
 }
 
+/** ID dnd-kit card di daftar; dijatuhkan ke group di sidebar (G-2). */
+export const cardDndId = (id: string) => `card:${id}`;
+
 export function CardList() {
   const view = useApp((s) => s.view);
+  const groupId = useApp((s) => s.groupId);
   const list = useApp((s) => s.list);
+  const trashed = useApp((s) => s.trashed);
+  const groups = useApp((s) => s.groups);
   const typeFilter = useApp((s) => s.typeFilter);
   const selectedId = useApp((s) => s.selectedId);
   const select = useApp((s) => s.select);
@@ -35,10 +42,12 @@ export function CardList() {
     return () => clearInterval(t);
   }, []);
 
-  const cards = visibleCards({ list, typeFilter });
-  const pinned = view === "all" ? cards.filter((c) => c.pinned) : [];
-  const rest = view === "all" ? cards.filter((c) => !c.pinned) : cards;
-  const title = view === "trash" ? "Trash" : "Semua";
+  const cards = visibleCards({ list, trashed, view, groupId, typeFilter });
+  const isTrash = view === "trash";
+  const pinned = isTrash ? [] : cards.filter((c) => c.pinned);
+  const rest = isTrash ? cards : cards.filter((c) => !c.pinned);
+  const title =
+    view === "trash" ? "Trash" : view === "ungrouped" ? "Tanpa group" : view === "group" ? groups.find((g) => g.id === groupId)?.name ?? "Group" : "Semua";
 
   return (
     <section className="list">
@@ -53,7 +62,7 @@ export function CardList() {
             <strong>{title}</strong>
             <span>{cards.length}</span>
           </div>
-          {view === "all" && (
+          {!isTrash && (
             <>
               <button className="add-btn" title="Note baru (Ctrl+N)" onClick={() => createCard("note")}>
                 <IconPlus style={{ color: "var(--note)" }} />
@@ -69,7 +78,7 @@ export function CardList() {
             <IconList />
           </button>
         </div>
-        {view === "all" && (
+        {!isTrash && (
           <div className="segmented" role="tablist">
             {FILTERS.map((f) => (
               <button key={f.key} role="tab" className={typeFilter === f.key ? "active" : ""} onClick={() => setTypeFilter(f.key)}>
@@ -83,8 +92,14 @@ export function CardList() {
       <div className="list-body">
         {cards.length === 0 && (
           <div className="list-empty">
-            {view === "trash" ? (
+            {isTrash ? (
               "Trash kosong. Card yang dihapus disimpan di sini selama 30 hari."
+            ) : view === "group" && typeFilter === "all" ? (
+              "Group ini masih kosong. Buat card baru di sini, atau seret card dari tampilan lain ke group di sidebar."
+            ) : view === "ungrouped" && typeFilter === "all" ? (
+              "Semua card sudah masuk group."
+            ) : typeFilter !== "all" ? (
+              `Tidak ada ${typeFilter === "note" ? "Note" : "Todo Card"} di sini.`
             ) : (
               <>
                 Belum ada card.
@@ -98,25 +113,40 @@ export function CardList() {
         )}
         {pinned.length > 0 && <div className="list-section">Disematkan</div>}
         {pinned.map((c) => (
-          <Row key={c.id} card={c} active={c.id === selectedId} onClick={() => select(c.id)} timeOf={c.updatedAt} />
+          <Row key={c.id} card={c} active={c.id === selectedId} onClick={() => select(c.id)} timeOf={c.updatedAt} draggable />
         ))}
         {pinned.length > 0 && rest.length > 0 && <div className="list-section">Lainnya</div>}
         {rest.map((c) => (
-          <Row key={c.id} card={c} active={c.id === selectedId} onClick={() => select(c.id)} timeOf={view === "trash" ? c.trashedAt ?? c.updatedAt : c.updatedAt} />
+          <Row key={c.id} card={c} active={c.id === selectedId} onClick={() => select(c.id)} timeOf={isTrash ? c.trashedAt ?? c.updatedAt : c.updatedAt} draggable={!isTrash} />
         ))}
       </div>
     </section>
   );
 }
 
-function Row({ card, active, onClick, timeOf }: { card: Card; active: boolean; onClick(): void; timeOf: number }) {
+interface RowProps {
+  card: Card;
+  active: boolean;
+  onClick(): void;
+  timeOf: number;
+  draggable: boolean;
+}
+
+function Row({ card, active, onClick, timeOf, draggable }: RowProps) {
   const snippet = card.type === "note" ? snippetFromMarkdown(card.body) : "";
+  const { setNodeRef, listeners, isDragging } = useDraggable({ id: cardDndId(card.id), disabled: !draggable });
   return (
-    <button className={`row ${active ? "active" : ""}`} onClick={onClick}>
+    <button ref={setNodeRef} className={`row ${active ? "active" : ""} ${isDragging ? "dragging" : ""}`} onClick={onClick} {...listeners}>
       <div className="row-top">
         <TypeIcon type={card.type} />
         <span className={`row-title ${card.title.trim() ? "" : "untitled"}`}>{card.title.trim() || "Tanpa judul"}</span>
         {card.pinned && <IconPin size={12} filled style={{ color: "var(--text-4)" }} />}
+        {card.linkCount > 0 && (
+          <span className="row-links" title={`${card.linkCount} card terhubung`}>
+            <IconLink size={11} />
+            {card.linkCount}
+          </span>
+        )}
         <span className="row-time">{relativeTime(timeOf)}</span>
       </div>
       {snippet && <div className="row-snippet">{snippet}</div>}

@@ -12,6 +12,10 @@ export interface Card {
   deletedAt: number | null;
   /** Progres item (T-5). Hanya untuk Todo Card; `null` untuk Note. */
   progress: TodoProgress | null;
+  /** L-7: jumlah card terhubung yang tidak di Trash (L-6). */
+  linkCount: number;
+  /** G-3: group tempat card berada (group yang belum dihapus). */
+  groupIds: string[];
 }
 
 export interface TodoProgress {
@@ -27,10 +31,14 @@ export type CardScope = "active" | "trash";
  * Repository: satu-satunya pintu ke data. UI tidak pernah menulis SQL.
  * Sync ke Supabase (M5) nanti cukup ditambahkan di lapisan ini.
  */
+export interface NewCard {
+  title?: string;
+}
+
 export interface CardRepo {
   list(scope: CardScope): Promise<Card[]>;
   get(id: string): Promise<Card | null>;
-  create(type: CardType): Promise<Card>;
+  create(type: CardType, init?: NewCard): Promise<Card>;
   update(id: string, patch: CardPatch): Promise<Card>;
   trash(id: string): Promise<void>;
   restore(id: string): Promise<void>;
@@ -71,4 +79,47 @@ export interface TodoRepo {
   remove(id: string): Promise<void>;
   /** Beri ulang posisi 1..n (dipakai jika jarak fractional index terlalu rapat). */
   rebalance(cardId: string): Promise<TodoItem[]>;
+}
+
+/**
+ * Link tidak berarah antar card (L-1 sampai L-7). Disimpan satu baris per pasangan
+ * dengan `card_a < card_b`; memutus link mengisi `deleted_at`, menghubungkan ulang
+ * menghidupkan baris yang sama.
+ */
+export interface LinkRepo {
+  /** ID card terhubung yang tidak di Trash dan tidak dihapus (L-3, L-6), urut waktu dihubungkan. */
+  linkedIds(cardId: string): Promise<string[]>;
+  /** Abaikan self-link; link yang sudah ada tidak digandakan. */
+  link(a: string, b: string): Promise<void>;
+  unlink(a: string, b: string): Promise<void>;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  /** Fractional index urutan di sidebar (G-1). */
+  position: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Group sebagai label (G-1 sampai G-7). Menghapus group tidak menghapus card. */
+export interface GroupRepo {
+  /** Group yang belum dihapus, urut `position`. */
+  list(): Promise<Group[]>;
+  create(name: string, position: number): Promise<Group>;
+  update(id: string, patch: Partial<Pick<Group, "name" | "position">>): Promise<Group>;
+  /** Soft delete group beserta keanggotaannya; card tetap utuh (G-5). */
+  remove(id: string): Promise<void>;
+  /** Beri ulang posisi 1..n. */
+  rebalance(): Promise<Group[]>;
+  /** G-2: tambah card ke group (menghidupkan keanggotaan lama jika ada). */
+  addCard(groupId: string, cardId: string): Promise<void>;
+  /** G-4: keluarkan card dari group tanpa menghapus card. */
+  removeCard(groupId: string, cardId: string): Promise<void>;
+}
+
+/** Urutan pasangan link: satu baris per pasangan (`card_a < card_b`). */
+export function linkPair(a: string, b: string): [string, string] {
+  return a < b ? [a, b] : [b, a];
 }

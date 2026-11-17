@@ -47,3 +47,21 @@ export const IconClose = ({ size, ...p }: P) => (
 export const IconFocus = ({ size, ...p }: P) => (
   <svg {...base(size)} {...p}><path d="M2.5 6V3.5a1 1 0 0 1 1-1H6M10 2.5h2.5a1 1 0 0 1 1 1V6M13.5 10v2.5a1 1 0 0 1-1 1H10M6 13.5H3.5a1 1 0 0 1-1-1V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
 );
+export const IconLink = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}><path d="M6.8 9.2a2.6 2.6 0 0 0 3.7 0l2.2-2.2a2.6 2.6 0 0 0-3.7-3.7l-.9.9M9.2 6.8a2.6 2.6 0 0 0-3.7 0L3.3 9a2.6 2.6 0 0 0 3.7 3.7l.9-.9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
+);
+export const IconGroup = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}><path d="M2.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1V4.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
+);
+export const IconInbox = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}><path d="M2.5 9.5l1.6-5.3a1 1 0 0 1 1-.7h5.8a1 1 0 0 1 1 .7l1.6 5.3V12a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1V9.5zM2.5 9.5h3l.8 1.5h3.4l.8-1.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
+);
+export const IconBack = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}><path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+);
+export const IconMore = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}>{[4, 8, 12].map((x) => <circle key={x} cx={x} cy="8" r="1.2" fill="currentColor" />)}</svg>
+);
+export const IconSearch = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}><circle cx="7" cy="7" r="4.25" stroke="currentColor" strokeWidth="1.3" /><path d="M10.2 10.2L13.5 13.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
+);

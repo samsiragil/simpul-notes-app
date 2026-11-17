@@ -1,12 +1,14 @@
 import { isTauri } from "../lib/util";
 import { createMemoryRepo } from "./memoryRepo";
-import type { CardRepo, TodoRepo } from "./types";
+import type { CardRepo, GroupRepo, LinkRepo, TodoRepo } from "./types";
 
 export * from "./types";
 
-interface Repos {
+export interface Repos {
   cards: CardRepo;
   todos: TodoRepo;
+  links: LinkRepo;
+  groups: GroupRepo;
 }
 
 let repos: Repos | null = null;
@@ -29,3 +31,5 @@ function ready(): Repos {
 
 export const cards = (): CardRepo => ready().cards;
 export const todos = (): TodoRepo => ready().todos;
+export const links = (): LinkRepo => ready().links;
+export const groups = (): GroupRepo => ready().groups;

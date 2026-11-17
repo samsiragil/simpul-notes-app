@@ -1,14 +1,20 @@
 import { newId, now } from "../lib/util";
-import type {
-  Card,
-  CardPatch,
-  CardRepo,
-  CardScope,
-  CardType,
-  NewTodoItem,
-  TodoItem,
-  TodoItemPatch,
-  TodoRepo,
+import type { Repos } from "./index";
+import {
+  linkPair,
+  type Card,
+  type CardPatch,
+  type CardRepo,
+  type CardScope,
+  type CardType,
+  type Group,
+  type GroupRepo,
+  type LinkRepo,
+  type NewCard,
+  type NewTodoItem,
+  type TodoItem,
+  type TodoItemPatch,
+  type TodoRepo,
 } from "./types";
 
 /**
@@ -17,10 +23,28 @@ import type {
  */
 const KEY = "notes-app:dev-cards";
 const ITEMS_KEY = "notes-app:dev-todo-items";
+const LINKS_KEY = "notes-app:dev-links";
+const GROUPS_KEY = "notes-app:dev-groups";
+const MEMBERS_KEY = "notes-app:dev-group-members";
 
-/** Progres dihitung saat dibaca, tidak disimpan. */
-type StoredCard = Omit<Card, "progress">;
+/** Progres, jumlah link, dan group dihitung saat dibaca, tidak disimpan. */
+type StoredCard = Omit<Card, "progress" | "linkCount" | "groupIds">;
 type StoredItem = TodoItem & { deletedAt: number | null };
+interface StoredLink {
+  cardA: string;
+  cardB: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt: number | null;
+}
+type StoredGroup = Group & { deletedAt: number | null };
+interface StoredMember {
+  groupId: string;
+  cardId: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt: number | null;
+}
 
 function load<T>(key: string): T[] {
   try {
@@ -53,22 +77,23 @@ const style = { bodyFont: "inter", fontSize: 17 };
 \`\`\`
 `;
 
-export interface MemoryRepos {
-  cards: CardRepo;
-  todos: TodoRepo;
-}
-
-export function createMemoryRepo(): MemoryRepos {
+export function createMemoryRepo(): Repos {
   let cards = load<StoredCard>(KEY);
   let items = load<StoredItem>(ITEMS_KEY);
+  let links = load<StoredLink>(LINKS_KEY);
+  let groups = load<StoredGroup>(GROUPS_KEY);
+  let members = load<StoredMember>(MEMBERS_KEY);
+
   if (cards.length === 0) {
     const t = now();
-    cards = [
-      { id: newId(), type: "note", title: "Riset Font", body: SAMPLE_BODY, pinned: true, createdAt: t, updatedAt: t, trashedAt: null, deletedAt: null },
-      { id: newId(), type: "note", title: "Rapat Senin", body: "Agenda: review sidebar, keputusan group tidak bersarang.", pinned: false, createdAt: t - 86_400_000, updatedAt: t - 86_400_000, trashedAt: null, deletedAt: null },
-    ];
+    const riset = newId();
     const todoId = newId();
-    cards.splice(1, 0, { id: todoId, type: "todo", title: "Belanja Bulanan", body: null, pinned: false, createdAt: t - 3_600_000, updatedAt: t - 3_600_000, trashedAt: null, deletedAt: null });
+    const rapat = newId();
+    cards = [
+      { id: riset, type: "note", title: "Riset Font", body: SAMPLE_BODY, pinned: true, createdAt: t, updatedAt: t, trashedAt: null, deletedAt: null },
+      { id: todoId, type: "todo", title: "Belanja Bulanan", body: null, pinned: false, createdAt: t - 3_600_000, updatedAt: t - 3_600_000, trashedAt: null, deletedAt: null },
+      { id: rapat, type: "note", title: "Rapat Senin", body: "Agenda: review sidebar, keputusan group tidak bersarang.", pinned: false, createdAt: t - 86_400_000, updatedAt: t - 86_400_000, trashedAt: null, deletedAt: null },
+    ];
     items = ["Beras 5 kg", "Minyak goreng", "Sabun cuci", "Kopi"].map((text, n) => ({
       id: newId(),
       cardId: todoId,
@@ -80,8 +105,16 @@ export function createMemoryRepo(): MemoryRepos {
       updatedAt: t - 3_600_000,
       deletedAt: null,
     }));
+    const [a, b] = linkPair(riset, rapat);
+    links = [{ cardA: a, cardB: b, createdAt: t, updatedAt: t, deletedAt: null }];
+    const proyek = newId();
+    groups = [{ id: proyek, name: "Proyek Notes App", position: 1, createdAt: t, updatedAt: t, deletedAt: null }];
+    members = [riset, rapat].map((cardId) => ({ groupId: proyek, cardId, createdAt: t, updatedAt: t, deletedAt: null }));
     save(KEY, cards);
     save(ITEMS_KEY, items);
+    save(LINKS_KEY, links);
+    save(GROUPS_KEY, groups);
+    save(MEMBERS_KEY, members);
   }
 
   const aliveItems = (cardId: string) =>
@@ -89,16 +122,33 @@ export function createMemoryRepo(): MemoryRepos {
       .filter((i) => i.cardId === cardId && i.deletedAt === null)
       .sort((a, b) => a.position - b.position || (a.id < b.id ? -1 : 1));
 
-  const withProgress = (c: StoredCard): Card => {
-    if (c.type !== "todo") return { ...c, progress: null };
-    const list = aliveItems(c.id);
-    return { ...c, progress: { done: list.filter((i) => i.done).length, total: list.length } };
+  const alive = () => cards.filter((c) => c.deletedAt === null);
+  const isActive = (id: string) => cards.some((c) => c.id === id && c.deletedAt === null && c.trashedAt === null);
+  const aliveGroups = () =>
+    groups.filter((g) => g.deletedAt === null).sort((a, b) => a.position - b.position || (a.id < b.id ? -1 : 1));
+
+  const linkedIds = (cardId: string) =>
+    links
+      .filter((l) => l.deletedAt === null && (l.cardA === cardId || l.cardB === cardId))
+      .sort((a, b) => a.updatedAt - b.updatedAt)
+      .map((l) => (l.cardA === cardId ? l.cardB : l.cardA))
+      .filter(isActive);
+
+  const groupIdsOf = (cardId: string) => {
+    const live = new Set(aliveGroups().map((g) => g.id));
+    return members.filter((m) => m.cardId === cardId && m.deletedAt === null && live.has(m.groupId)).map((m) => m.groupId);
   };
 
-  const alive = () => cards.filter((c) => c.deletedAt === null);
+  const enrich = (c: StoredCard): Card => {
+    const extra = { linkCount: linkedIds(c.id).length, groupIds: groupIdsOf(c.id) };
+    if (c.type !== "todo") return { ...c, ...extra, progress: null };
+    const list = aliveItems(c.id);
+    return { ...c, ...extra, progress: { done: list.filter((i) => i.done).length, total: list.length } };
+  };
+
   const find = (id: string) => {
     const c = alive().find((x) => x.id === id);
-    return c ? withProgress(c) : null;
+    return c ? enrich(c) : null;
   };
   const mutate = (id: string, fn: (c: StoredCard) => StoredCard) => {
     cards = cards.map((c) => (c.id === id ? fn(c) : c));
@@ -109,10 +159,16 @@ export function createMemoryRepo(): MemoryRepos {
     save(ITEMS_KEY, items);
   };
   const toItem = ({ deletedAt: _, ...rest }: StoredItem): TodoItem => rest;
+  const toGroup = ({ deletedAt: _, ...rest }: StoredGroup): Group => rest;
   const getItem = (id: string): TodoItem => {
     const i = items.find((x) => x.id === id && x.deletedAt === null);
     if (!i) throw new Error(`Item todo ${id} tidak ditemukan`);
     return toItem(i);
+  };
+  const getGroup = (id: string): Group => {
+    const g = groups.find((x) => x.id === id && x.deletedAt === null);
+    if (!g) throw new Error(`Group ${id} tidak ditemukan`);
+    return toGroup(g);
   };
   const touchCardOf = (itemId: string, t: number) => {
     const cardId = items.find((i) => i.id === itemId)?.cardId;
@@ -122,7 +178,11 @@ export function createMemoryRepo(): MemoryRepos {
     const t = now();
     mutate(id, (c) => ({ ...c, deletedAt: t, updatedAt: t, body: null, title: "" }));
     items = items.map((i) => (i.cardId === id && i.deletedAt === null ? { ...i, deletedAt: t, updatedAt: t } : i));
+    links = links.map((l) => ((l.cardA === id || l.cardB === id) && l.deletedAt === null ? { ...l, deletedAt: t, updatedAt: t } : l));
+    members = members.map((m) => (m.cardId === id && m.deletedAt === null ? { ...m, deletedAt: t, updatedAt: t } : m));
     save(ITEMS_KEY, items);
+    save(LINKS_KEY, links);
+    save(MEMBERS_KEY, members);
   };
 
   const cardRepo: CardRepo = {
@@ -132,17 +192,17 @@ export function createMemoryRepo(): MemoryRepos {
         scope === "trash"
           ? list.sort((a, b) => (b.trashedAt ?? 0) - (a.trashedAt ?? 0))
           : list.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt - a.updatedAt);
-      return sorted.map(withProgress);
+      return sorted.map(enrich);
     },
     async get(id) {
       return find(id);
     },
-    async create(type: CardType) {
+    async create(type: CardType, init: NewCard = {}) {
       const t = now();
-      const c: StoredCard = { id: newId(), type, title: "", body: type === "note" ? "" : null, pinned: false, createdAt: t, updatedAt: t, trashedAt: null, deletedAt: null };
+      const c: StoredCard = { id: newId(), type, title: init.title ?? "", body: type === "note" ? "" : null, pinned: false, createdAt: t, updatedAt: t, trashedAt: null, deletedAt: null };
       cards = [c, ...cards];
       save(KEY, cards);
-      return withProgress(c);
+      return enrich(c);
     },
     async update(id: string, patch: CardPatch) {
       mutate(id, (c) => ({ ...c, ...patch, updatedAt: now() }));
@@ -201,5 +261,70 @@ export function createMemoryRepo(): MemoryRepos {
     },
   };
 
-  return { cards: cardRepo, todos: todoRepo };
+  const linkRepo: LinkRepo = {
+    async linkedIds(cardId) {
+      return linkedIds(cardId);
+    },
+    async link(a, b) {
+      if (a === b) return;
+      const [x, y] = linkPair(a, b);
+      const t = now();
+      const existing = links.find((l) => l.cardA === x && l.cardB === y);
+      if (!existing) links = [...links, { cardA: x, cardB: y, createdAt: t, updatedAt: t, deletedAt: null }];
+      else if (existing.deletedAt !== null) links = links.map((l) => (l === existing ? { ...l, deletedAt: null, updatedAt: t } : l));
+      save(LINKS_KEY, links);
+    },
+    async unlink(a, b) {
+      const [x, y] = linkPair(a, b);
+      const t = now();
+      links = links.map((l) => (l.cardA === x && l.cardB === y && l.deletedAt === null ? { ...l, deletedAt: t, updatedAt: t } : l));
+      save(LINKS_KEY, links);
+    },
+  };
+
+  const groupRepo: GroupRepo = {
+    async list() {
+      return aliveGroups().map(toGroup);
+    },
+    async create(name, position) {
+      const t = now();
+      const g: StoredGroup = { id: newId(), name, position, createdAt: t, updatedAt: t, deletedAt: null };
+      groups = [...groups, g];
+      save(GROUPS_KEY, groups);
+      return toGroup(g);
+    },
+    async update(id, patch) {
+      groups = groups.map((g) => (g.id === id ? { ...g, ...patch, updatedAt: now() } : g));
+      save(GROUPS_KEY, groups);
+      return getGroup(id);
+    },
+    async remove(id) {
+      const t = now();
+      groups = groups.map((g) => (g.id === id && g.deletedAt === null ? { ...g, deletedAt: t, updatedAt: t } : g));
+      members = members.map((m) => (m.groupId === id && m.deletedAt === null ? { ...m, deletedAt: t, updatedAt: t } : m));
+      save(GROUPS_KEY, groups);
+      save(MEMBERS_KEY, members);
+    },
+    async rebalance() {
+      const t = now();
+      const order = new Map(aliveGroups().map((g, n) => [g.id, n + 1]));
+      groups = groups.map((g) => (order.has(g.id) ? { ...g, position: order.get(g.id)!, updatedAt: t } : g));
+      save(GROUPS_KEY, groups);
+      return aliveGroups().map(toGroup);
+    },
+    async addCard(groupId, cardId) {
+      const t = now();
+      const existing = members.find((m) => m.groupId === groupId && m.cardId === cardId);
+      if (!existing) members = [...members, { groupId, cardId, createdAt: t, updatedAt: t, deletedAt: null }];
+      else if (existing.deletedAt !== null) members = members.map((m) => (m === existing ? { ...m, deletedAt: null, updatedAt: t } : m));
+      save(MEMBERS_KEY, members);
+    },
+    async removeCard(groupId, cardId) {
+      const t = now();
+      members = members.map((m) => (m.groupId === groupId && m.cardId === cardId && m.deletedAt === null ? { ...m, deletedAt: t, updatedAt: t } : m));
+      save(MEMBERS_KEY, members);
+    },
+  };
+
+  return { cards: cardRepo, todos: todoRepo, links: linkRepo, groups: groupRepo };
 }
