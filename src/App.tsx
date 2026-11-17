@@ -35,7 +35,7 @@ export default function App() {
   );
 }
 
-/** Shortcut global (PRD: C-1, P-3). */
+/** Shortcut global (PRD: C-1, P-3). `Ctrl+Shift+T` membuat Todo Card. */
 function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -47,6 +47,9 @@ function useShortcuts() {
       if (key === "n" && !e.shiftKey) {
         e.preventDefault();
         void app.createCard("note");
+      } else if (key === "t" && e.shiftKey) {
+        e.preventDefault();
+        void app.createCard("todo");
       } else if (e.key === "\\" || e.code === "Backslash") {
         e.preventDefault();
         if (e.shiftKey) settings.toggleList();

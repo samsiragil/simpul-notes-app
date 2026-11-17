@@ -55,6 +55,9 @@ export function CardPane() {
               <span>
                 <span className="kbd">Ctrl</span> + <span className="kbd">N</span> &nbsp;Note baru
               </span>
+              <span>
+                <span className="kbd">Ctrl</span> + <span className="kbd">Shift</span> + <span className="kbd">T</span> &nbsp;Todo Card baru
+              </span>
             </>
           )}
         </div>

@@ -59,7 +59,7 @@ export function CardList() {
                 <IconPlus style={{ color: "var(--note)" }} />
                 Note
               </button>
-              <button className="add-btn" title="Todo Card hadir di M2" disabled>
+              <button className="add-btn" title="Todo Card baru (Ctrl+Shift+T)" onClick={() => createCard("todo")}>
                 <IconPlus style={{ color: "var(--todo)" }} />
                 Todo
               </button>
@@ -89,7 +89,9 @@ export function CardList() {
               <>
                 Belum ada card.
                 <br />
-                Tekan <span className="kbd">Ctrl</span> + <span className="kbd">N</span> untuk membuat Note.
+                Tekan <span className="kbd">Ctrl</span> + <span className="kbd">N</span> untuk membuat Note,
+                <br />
+                atau <span className="kbd">Ctrl</span> + <span className="kbd">Shift</span> + <span className="kbd">T</span> untuk Todo Card.
               </>
             )}
           </div>

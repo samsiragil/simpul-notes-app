@@ -67,7 +67,21 @@ export function createMemoryRepo(): MemoryRepos {
       { id: newId(), type: "note", title: "Riset Font", body: SAMPLE_BODY, pinned: true, createdAt: t, updatedAt: t, trashedAt: null, deletedAt: null },
       { id: newId(), type: "note", title: "Rapat Senin", body: "Agenda: review sidebar, keputusan group tidak bersarang.", pinned: false, createdAt: t - 86_400_000, updatedAt: t - 86_400_000, trashedAt: null, deletedAt: null },
     ];
+    const todoId = newId();
+    cards.splice(1, 0, { id: todoId, type: "todo", title: "Belanja Bulanan", body: null, pinned: false, createdAt: t - 3_600_000, updatedAt: t - 3_600_000, trashedAt: null, deletedAt: null });
+    items = ["Beras 5 kg", "Minyak goreng", "Sabun cuci", "Kopi"].map((text, n) => ({
+      id: newId(),
+      cardId: todoId,
+      text,
+      done: n === 1,
+      position: n + 1,
+      doneAt: n === 1 ? t - 3_600_000 : null,
+      createdAt: t - 3_600_000,
+      updatedAt: t - 3_600_000,
+      deletedAt: null,
+    }));
     save(KEY, cards);
+    save(ITEMS_KEY, items);
   }
 
   const aliveItems = (cardId: string) =>
