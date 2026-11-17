@@ -4,6 +4,7 @@ import { relativeTime, snippetFromMarkdown } from "../lib/util";
 import { useApp, visibleCards, type TypeFilter } from "../store/app";
 import { useSettings } from "../store/settings";
 import { IconList, IconNote, IconPin, IconPlus, IconSidebar, IconTodo } from "./Icons";
+import { TodoProgress } from "./TodoProgress";
 
 const FILTERS: { key: TypeFilter; label: string }[] = [
   { key: "all", label: "Semua" },
@@ -117,6 +118,11 @@ function Row({ card, active, onClick, timeOf }: { card: Card; active: boolean; o
         <span className="row-time">{relativeTime(timeOf)}</span>
       </div>
       {snippet && <div className="row-snippet">{snippet}</div>}
+      {card.progress && (
+        <div className="row-progress">
+          <TodoProgress progress={card.progress} compact />
+        </div>
+      )}
     </button>
   );
 }

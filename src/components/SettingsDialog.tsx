@@ -1,8 +1,14 @@
 import { useEffect } from "react";
 import { FONTS, STYLE_LIMITS, type FontKey } from "../config/style";
+import type { DoneMode } from "../lib/order";
 import { useApp } from "../store/app";
 import { useSettings } from "../store/settings";
 import { IconClose } from "./Icons";
+
+const DONE_MODES: { key: DoneMode; label: string }[] = [
+  { key: "bottom", label: "Pindah ke bawah" },
+  { key: "hide", label: "Sembunyikan" },
+];
 
 export function SettingsDialog() {
   const open = useApp((s) => s.settingsOpen);
@@ -10,6 +16,8 @@ export function SettingsDialog() {
   const style = useSettings((s) => s.style);
   const setStyle = useSettings((s) => s.setStyle);
   const resetStyle = useSettings((s) => s.resetStyle);
+  const todoDoneMode = useSettings((s) => s.todoDoneMode);
+  const setTodoDoneMode = useSettings((s) => s.setTodoDoneMode);
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +68,17 @@ export function SettingsDialog() {
             <Slider label="Ukuran teks" value={style.fontSize} display={`${style.fontSize}px`} {...STYLE_LIMITS.fontSize} onChange={(v) => setStyle({ fontSize: v })} />
             <Slider label="Jarak baris" value={style.lineHeight} display={style.lineHeight.toFixed(2)} {...STYLE_LIMITS.lineHeight} onChange={(v) => setStyle({ lineHeight: Math.round(v * 100) / 100 })} />
             <Slider label="Lebar kolom" value={style.contentWidth} display={`${style.contentWidth}px`} {...STYLE_LIMITS.contentWidth} onChange={(v) => setStyle({ contentWidth: v })} />
+
+            <div>
+              <div className="field-label">Item Todo yang selesai</div>
+              <div className="segmented" role="radiogroup" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                {DONE_MODES.map((m) => (
+                  <button key={m.key} role="radio" aria-checked={todoDoneMode === m.key} className={todoDoneMode === m.key ? "active" : ""} onClick={() => setTodoDoneMode(m.key)}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="preview">

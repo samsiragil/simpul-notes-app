@@ -24,8 +24,11 @@ interface TodoState {
   showDone: boolean;
 
   load(cardId: string): Promise<void>;
-  /** T-1: tambah item setelah `afterId` (atau di akhir), lalu fokus ke item baru. */
-  add(afterId: string | null, text?: string): Promise<string | null>;
+  /**
+   * T-1: tambah item setelah `afterId` (atau di akhir). `focusNew` false dipakai input
+   * "Tambah item" agar kursor tetap di input untuk item berikutnya.
+   */
+  add(afterId: string | null, text?: string, focusNew?: boolean): Promise<string | null>;
   /** T-3: edit teks; disimpan dengan debounce. */
   setText(id: string, text: string): void;
   /** T-2 */
@@ -149,14 +152,14 @@ export const useTodo = create<TodoState>((set, get) => {
       }
     },
 
-    async add(afterId, text = "") {
+    async add(afterId, text = "", focusNew = true) {
       const cardId = get().cardId;
       if (!cardId) return null;
       const position = await placement(() => positionAfter(get().items, afterId));
       if (position === null || get().cardId !== cardId) return null;
       const t = now();
       const item: TodoItem = { id: newId(), cardId, text, done: false, position, doneAt: null, createdAt: t, updatedAt: t };
-      set({ items: [...get().items, item], focus: { id: item.id, caret: "end" } });
+      set({ items: [...get().items, item], ...(focusNew ? { focus: { id: item.id, caret: "end" as const } } : {}) });
       void write(() => todos().create({ id: item.id, cardId, text, position }));
       report(cardId, get().items);
       return item.id;

@@ -1,0 +1,74 @@
+/* Todo Card (T-1 sampai T-6). Teks item memakai font isi dari config style. */
+.todo-list {
+  font-family: var(--font-body);
+  font-size: var(--fs);
+  line-height: var(--lh);
+  max-width: var(--content-w);
+  min-height: 40vh;
+}
+.todo-items { list-style: none; margin: 0; padding: 0; }
+
+.todo-item {
+  position: relative; display: flex; align-items: flex-start; gap: 0.55em;
+  margin: 0 0 0 -28px; padding: 0.12em 0 0.12em 6px; border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.todo-item.dragging { z-index: 2; box-shadow: 0 6px 18px rgba(34, 33, 31, 0.12); }
+
+.todo-grip, .todo-remove {
+  flex: none; border: 0; background: none; padding: 0; color: var(--text-4);
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 4px;
+  opacity: 0; transition: opacity 0.1s;
+}
+.todo-grip { width: 16px; height: calc(var(--fs) * var(--lh)); cursor: grab; touch-action: none; }
+.todo-item.dragging .todo-grip { cursor: grabbing; }
+.todo-remove { width: 22px; height: 22px; margin-top: calc((var(--fs) * var(--lh) - 22px) / 2); cursor: pointer; }
+.todo-remove:hover { background: var(--hover); color: var(--text-2); }
+.todo-item:hover .todo-grip, .todo-item:hover .todo-remove,
+.todo-item:focus-within .todo-remove, .todo-item.dragging .todo-grip { opacity: 1; }
+
+.todo-check {
+  flex: none; width: 1em; height: 1em; padding: 0; border-radius: 5px; cursor: pointer;
+  margin-top: calc((var(--fs) * var(--lh) - 1em) / 2);
+  border: 1.5px solid #c9c5bd; background: var(--surface); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.todo-check:hover { border-color: var(--todo); }
+.todo-check[aria-checked="true"] { background: var(--todo); border-color: var(--todo); }
+.todo-check:disabled { cursor: default; }
+.todo-check svg { width: 0.72em; height: 0.72em; }
+
+.todo-text {
+  flex: 1; min-width: 0; border: 0; outline: none; background: none; resize: none; overflow: hidden;
+  padding: 0; margin: 0; font: inherit; line-height: inherit; color: var(--text);
+}
+.todo-text::placeholder { color: #c9c5bd; }
+.todo-item.done .todo-text { color: var(--text-3); text-decoration: line-through; text-decoration-color: #c9c5bd; }
+
+.todo-add { display: flex; align-items: center; gap: 0.55em; padding: 0.12em 0; cursor: text; }
+.todo-add-icon {
+  flex: none; width: 1em; height: 1em; display: inline-flex; align-items: center; justify-content: center; color: var(--text-4);
+}
+.todo-add-input {
+  flex: 1; min-width: 0; border: 0; outline: none; background: none; padding: 0; font: inherit; line-height: inherit;
+}
+.todo-add-input::placeholder { color: #c9c5bd; }
+
+.todo-section {
+  display: block; margin: 1.1em 0 0.3em; padding: 0; border: 0; background: none; text-align: left;
+  font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--text-4); text-transform: uppercase;
+}
+.todo-section.toggle { cursor: pointer; text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 500; }
+.todo-section.toggle:hover { color: var(--text-2); }
+.todo-empty { color: var(--text-3); margin: 0; }
+
+/* Progres (T-5): di meta card dan di daftar card */
+.todo-progress { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-3); }
+.todo-progress.empty { color: var(--text-4); }
+.todo-progress-bar { width: 56px; height: 4px; border-radius: 999px; background: var(--border-soft); overflow: hidden; }
+.todo-progress-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--todo); }
+.todo-progress-label { font-variant-numeric: tabular-nums; }
+.todo-progress.complete .todo-progress-label { color: var(--todo); font-weight: 600; }
+.todo-progress.compact .todo-progress-bar { width: 40px; }
+.row-progress { padding-left: 22px; display: flex; }

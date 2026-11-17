@@ -33,6 +33,14 @@ export const IconPin = ({ size, filled, ...p }: P & { filled?: boolean }) => (
 export const IconRestore = ({ size, ...p }: P) => (
   <svg {...base(size)} {...p}><path d="M3 7.5A5 5 0 1 1 4.5 11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M2.5 4v3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
 );
+export const IconCheck = ({ size, ...p }: P) => (
+  <svg {...base(size ?? 12)} {...p}><path d="M3.5 8.3l3 3 6-6.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+);
+export const IconGrip = ({ size, ...p }: P) => (
+  <svg {...base(size ?? 14)} {...p}>
+    {[4, 8, 12].map((y) => [6, 10].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.1" fill="currentColor" />))}
+  </svg>
+);
 export const IconClose = ({ size, ...p }: P) => (
   <svg {...base(size ?? 14)} {...p}><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
 );

@@ -5,6 +5,8 @@ import { debounce, fullDate, relativeTime } from "../lib/util";
 import { useApp } from "../store/app";
 import { useSettings } from "../store/settings";
 import { IconFocus, IconList, IconPin, IconRestore, IconSidebar, IconTrash } from "./Icons";
+import { focusFirstTodo, TodoList } from "./TodoList";
+import { TodoProgress } from "./TodoProgress";
 
 const AUTOSAVE_MS = 800;
 
@@ -130,8 +132,8 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
   }, [focusTitleId, card.id, consumeFocusTitle]);
 
   const focusEditor = () => {
-    const el = document.querySelector<HTMLElement>(".pane .ProseMirror");
-    el?.focus();
+    if (card.type === "todo") return focusFirstTodo();
+    document.querySelector<HTMLElement>(".pane .ProseMirror")?.focus();
   };
 
   return (
@@ -182,6 +184,7 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
         <div className="card-meta">
           <span className={`chip-type ${card.type}`}>{card.type === "note" ? "Note" : "Todo"}</span>
           <span title={`Dibuat ${fullDate(card.createdAt)}`}>{fullDate(card.updatedAt)}</span>
+          {card.progress && <TodoProgress progress={card.progress} />}
         </div>
 
         {card.type === "note" ? (
@@ -192,7 +195,7 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
             onChange={(body) => saver.queue({ body })}
           />
         ) : (
-          <p style={{ color: "var(--text-3)" }}>Todo Card hadir di M2.</p>
+          <TodoList cardId={card.id} readOnly={readOnly} />
         )}
       </div>
     </div>
