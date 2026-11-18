@@ -8,6 +8,14 @@ import {
   Code,
   Columns2,
   Database,
+  Download,
+  ExternalLink,
+  File,
+  FileArchive,
+  FileAudio,
+  FileImage,
+  FileSpreadsheet,
+  FileVideo,
   DatabaseBackup,
   Ellipsis,
   FileOutput,
@@ -25,6 +33,7 @@ import {
   Link,
   ListChecks,
   Monitor,
+  Paperclip,
   Moon,
   Palette,
   PanelLeft,
@@ -110,3 +119,15 @@ export const IconArchive = make(ArchiveRestore, 14);
 export const IconSun = make(Sun, 14);
 export const IconMoon = make(Moon, 14);
 export const IconMonitor = make(Monitor, 14);
+
+// Lampiran
+export const IconAttach = make(Paperclip, 14);
+export const IconOpenExternal = make(ExternalLink, 14);
+export const IconDownload = make(Download, 14);
+export const IconFile = make(File, 22, 1.5);
+export const IconFileDoc = make(FileText, 22, 1.5);
+export const IconFileSheet = make(FileSpreadsheet, 22, 1.5);
+export const IconFileArchive = make(FileArchive, 22, 1.5);
+export const IconFileImage = make(FileImage, 22, 1.5);
+export const IconFileVideo = make(FileVideo, 22, 1.5);
+export const IconFileAudio = make(FileAudio, 22, 1.5);

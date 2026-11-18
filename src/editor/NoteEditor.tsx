@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
@@ -8,6 +8,9 @@ import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import type { Editor } from "@tiptap/core";
+import * as native from "../lib/native";
+import { Attachment } from "./Attachment";
+import { attachFiles, type AttachSource } from "./attach";
 import { IconBold, IconCode, IconHeading, IconHighlight, IconItalic, IconLink, IconStrike, IconUnderline } from "../components/Icons";
 
 interface Props {
@@ -16,15 +19,25 @@ interface Props {
   initialMarkdown: string;
   editable: boolean;
   onChange(markdown: string): void;
+  ref?: Ref<NoteEditorHandle>;
+}
+
+export interface NoteEditorHandle {
+  /** Pilih file lewat dialog lalu lampirkan di posisi kursor. */
+  pickAttachments(): void;
 }
 
 function getMarkdown(editor: Editor): string {
   return editor.getMarkdown();
 }
 
-export function NoteEditor({ cardId, initialMarkdown, editable, onChange }: Props) {
+export function NoteEditor({ cardId, initialMarkdown, editable, onChange, ref }: Props) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const attachRef = useRef<(sources: AttachSource[], pos?: number) => void>(() => {});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [dropOver, setDropOver] = useState(false);
 
   const extensions = useMemo(
     () => [
@@ -40,6 +53,7 @@ export function NoteEditor({ cardId, initialMarkdown, editable, onChange }: Prop
       TableHeader,
       TableCell,
       Placeholder.configure({ placeholder: "Mulai menulis… (ketik # untuk heading, - untuk list, [] untuk checklist)" }),
+      Attachment,
       Markdown,
     ],
     [],
@@ -51,7 +65,19 @@ export function NoteEditor({ cardId, initialMarkdown, editable, onChange }: Prop
       content: initialMarkdown,
       contentType: "markdown",
       editable,
-      editorProps: { attributes: { class: "note-body", spellcheck: "false" } },
+      editorProps: {
+        attributes: { class: "note-body", spellcheck: "false" },
+        // Paste file atau screenshot = lampiran. Paste dari Word/Excel juga membawa gambar,
+        // jadi file hanya dipakai jika clipboard tidak berisi teks.
+        handlePaste: (view, event) => {
+          const files = [...(event.clipboardData?.files ?? [])];
+          if (!files.length || !view.editable || !native.hasNative()) return false;
+          if ((event.clipboardData?.getData("text/plain") ?? "").trim()) return false;
+          event.preventDefault();
+          attachRef.current(files);
+          return true;
+        },
+      },
       onUpdate: ({ editor }) => onChangeRef.current(getMarkdown(editor)),
     },
     [cardId],
@@ -61,11 +87,79 @@ export function NoteEditor({ cardId, initialMarkdown, editable, onChange }: Prop
     editor?.setEditable(editable);
   }, [editor, editable]);
 
+  attachRef.current = (sources, pos) => {
+    if (!editor || !sources.length) return;
+    setErrors([]);
+    setBusy(`Menyalin ${sources.length} file…`);
+    attachFiles(editor, cardId, sources, pos)
+      .then((r) => setErrors(r.errors))
+      .finally(() => setBusy(null));
+  };
+
+  useImperativeHandle(ref, () => ({
+    pickAttachments: () => {
+      native
+        .pickFiles("Lampirkan file")
+        .then((paths) => attachRef.current(paths))
+        .catch((e) => setErrors([String(e)]));
+    },
+  }));
+
+  useEffect(() => {
+    if (!errors.length) return;
+    const t = setTimeout(() => setErrors([]), 8000);
+    return () => clearTimeout(t);
+  }, [errors]);
+
+  // Drag & drop file dari File Explorer. Tauri menangkap drop file di tingkat jendela
+  // (bukan event HTML5), lengkap dengan path aslinya.
+  useEffect(() => {
+    if (!editor || !editable || !native.hasNative()) return;
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    const target = (pos: { x: number; y: number }) => {
+      const x = pos.x / window.devicePixelRatio;
+      const y = pos.y / window.devicePixelRatio;
+      const el = document.elementFromPoint(x, y);
+      const dom = editor.view.dom;
+      if (!el) return null;
+      if (dom.contains(el)) return editor.view.posAtCoords({ left: x, top: y })?.pos ?? editor.state.doc.content.size;
+      const pane = dom.closest(".pane-content");
+      return pane?.contains(el) ? editor.state.doc.content.size : null;
+    };
+    import("@tauri-apps/api/webview").then(({ getCurrentWebview }) =>
+      getCurrentWebview()
+        .onDragDropEvent(({ payload: p }) => {
+          if (p.type === "leave") return setDropOver(false);
+          const pos = target(p.position);
+          if (p.type === "drop") {
+            setDropOver(false);
+            if (pos !== null) attachRef.current(p.paths, pos);
+          } else {
+            setDropOver(pos !== null);
+          }
+        })
+        .then((fn) => (disposed ? fn() : (unlisten = fn))),
+    );
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [editor, editable]);
+
   if (!editor) return null;
   return (
     <>
       {editable && <FormatBubble editor={editor} />}
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} className={dropOver ? "drop-over" : undefined} />
+      {(busy || errors.length > 0) && (
+        <div className={`att-status${errors.length ? " error" : ""}`} role="status">
+          {busy && <div>{busy}</div>}
+          {errors.map((e) => (
+            <div key={e}>Gagal melampirkan {e}</div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

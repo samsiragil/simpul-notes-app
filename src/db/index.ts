@@ -1,6 +1,6 @@
 import { isTauri } from "../lib/util";
 import { createMemoryRepo } from "./memoryRepo";
-import type { CardRepo, DataRepo, GroupRepo, LinkRepo, SearchRepo, TodoRepo } from "./types";
+import type { AttachmentRepo, CardRepo, DataRepo, GroupRepo, LinkRepo, SearchRepo, TodoRepo } from "./types";
 
 export * from "./types";
 
@@ -11,6 +11,7 @@ export interface Repos {
   groups: GroupRepo;
   search: SearchRepo;
   data: DataRepo;
+  attachments: AttachmentRepo;
 }
 
 let repos: Repos | null = null;
@@ -37,3 +38,4 @@ export const links = (): LinkRepo => ready().links;
 export const groups = (): GroupRepo => ready().groups;
 export const search = (): SearchRepo => ready().search;
 export const data = (): DataRepo => ready().data;
+export const attachments = (): AttachmentRepo => ready().attachments;

@@ -166,10 +166,44 @@ export interface SnapshotMember {
 
 export interface Snapshot {
   cards: SnapshotCard[];
+  attachments: SnapshotAttachment[];
   todoItems: TodoItem[];
   links: SnapshotLink[];
   groups: Group[];
   groupMembers: SnapshotMember[];
+}
+
+export interface Attachment {
+  id: string;
+  cardId: string;
+  /** Nama file asli saat diunggah. */
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  /** Hash isi file; bersama `ext` menjadi nama file fisik di folder lampiran. */
+  sha256: string;
+  /** Ekstensi huruf kecil tanpa titik, boleh kosong. */
+  ext: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt: number | null;
+}
+
+export type NewAttachment = Pick<Attachment, "cardId" | "fileName" | "mimeType" | "sizeBytes" | "sha256" | "ext">;
+
+export type SnapshotAttachment = Omit<Attachment, "deletedAt">;
+
+/**
+ * Metadata lampiran Note. File fisiknya dikelola backend (src/lib/native.ts).
+ * Lampiran ikut ditandai terhapus saat card dihapus permanen.
+ */
+export interface AttachmentRepo {
+  create(a: NewAttachment): Promise<Attachment>;
+  /**
+   * Termasuk yang sudah dihapus: referensi di Note bisa kembali lewat undo
+   * atau tersalin ke Note lain, dan file fisiknya tidak pernah dihapus.
+   */
+  get(id: string): Promise<Attachment | null>;
 }
 
 /** Operasi atas seluruh data: export (P-6) dan salinan database (backup, pindah folder P-5). */

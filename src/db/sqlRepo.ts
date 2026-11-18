@@ -4,6 +4,8 @@ import { markdownToText, newId, now } from "../lib/util";
 import type { Repos } from "./index";
 import {
   linkPair,
+  type Attachment,
+  type AttachmentRepo,
   type Card,
   type CardPatch,
   type CardRepo,
@@ -57,6 +59,32 @@ interface TodoItemRow {
   updated_at: number;
 }
 
+interface AttachmentRow {
+  id: string;
+  card_id: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  sha256: string;
+  ext: string;
+  created_at: number;
+  updated_at: number;
+  deleted_at: number | null;
+}
+
+const toAttachment = (r: AttachmentRow): Attachment => ({
+  id: r.id,
+  cardId: r.card_id,
+  fileName: r.file_name,
+  mimeType: r.mime_type,
+  sizeBytes: r.size_bytes,
+  sha256: r.sha256,
+  ext: r.ext,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
+  deletedAt: r.deleted_at,
+});
+
 const toCard = (r: CardRow): Card => ({
   id: r.id,
   type: r.type,
@@ -102,7 +130,7 @@ const CARD_SELECT = `
   LEFT JOIN (
     SELECT card_id, COUNT(*) AS item_total, SUM(done) AS item_done
     FROM todo_item
-    WHERE deleted_at IS NULL
+    WHERE deleted_at IS NULL AND trim(text) <> '---'
     GROUP BY card_id
   ) p ON p.card_id = c.id
   LEFT JOIN (
@@ -143,6 +171,38 @@ export async function createSqlRepo(dbUrl: string): Promise<Repos> {
     groups: groupRepo(db),
     search: searchRepo(db),
     data: dataRepo(db),
+    attachments: attachmentRepo(db),
+  };
+}
+
+function attachmentRepo(db: Database): AttachmentRepo {
+  return {
+    async create(a) {
+      const t = now();
+      const row: AttachmentRow = {
+        id: newId(),
+        card_id: a.cardId,
+        file_name: a.fileName,
+        mime_type: a.mimeType,
+        size_bytes: a.sizeBytes,
+        sha256: a.sha256,
+        ext: a.ext,
+        created_at: t,
+        updated_at: t,
+        deleted_at: null,
+      };
+      await db.execute(
+        `INSERT INTO attachment (id, card_id, file_name, mime_type, size_bytes, sha256, ext, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [row.id, row.card_id, row.file_name, row.mime_type, row.size_bytes, row.sha256, row.ext, t, t],
+      );
+      return toAttachment(row);
+    },
+
+    async get(id) {
+      const rows = await db.select<AttachmentRow[]>("SELECT * FROM attachment WHERE id = $1", [id]);
+      return rows[0] ? toAttachment(rows[0]) : null;
+    },
   };
 }
 
@@ -224,6 +284,7 @@ function cardRepo(db: Database, index: SearchIndex): CardRepo {
       await db.execute("UPDATE todo_item SET deleted_at = $1, updated_at = $1 WHERE card_id = $2 AND deleted_at IS NULL", [t, id]);
       await db.execute("UPDATE link SET deleted_at = $1, updated_at = $1 WHERE (card_a = $2 OR card_b = $2) AND deleted_at IS NULL", [t, id]);
       await db.execute("UPDATE group_member SET deleted_at = $1, updated_at = $1 WHERE card_id = $2 AND deleted_at IS NULL", [t, id]);
+      await db.execute("UPDATE attachment SET deleted_at = $1, updated_at = $1 WHERE card_id = $2 AND deleted_at IS NULL", [t, id]);
       await index.drop(id);
     }
   };
@@ -536,8 +597,12 @@ function searchRepo(db: Database): SearchRepo {
 function dataRepo(db: Database): DataRepo {
   return {
     async snapshot(): Promise<Snapshot> {
-      const [cards, items, links, groups, members] = await Promise.all([
+      const [cards, attachments, items, links, groups, members] = await Promise.all([
         db.select<CardRow[]>("SELECT * FROM card WHERE deleted_at IS NULL ORDER BY created_at, id"),
+        db.select<AttachmentRow[]>(
+          `SELECT a.* FROM attachment a JOIN card c ON c.id = a.card_id
+           WHERE a.deleted_at IS NULL AND c.deleted_at IS NULL ORDER BY a.created_at, a.id`,
+        ),
         db.select<TodoItemRow[]>(
           `SELECT i.* FROM todo_item i JOIN card c ON c.id = i.card_id
            WHERE i.deleted_at IS NULL AND c.deleted_at IS NULL ORDER BY i.card_id, i.position`,
@@ -562,6 +627,10 @@ function dataRepo(db: Database): DataRepo {
           updatedAt: r.updated_at,
           trashedAt: r.trashed_at,
         })),
+        attachments: attachments.map((r) => {
+          const { deletedAt: _, ...a } = toAttachment(r);
+          return a;
+        }),
         todoItems: items.map(toItem),
         links: links.map((l) => ({ cardA: l.card_a, cardB: l.card_b, createdAt: l.created_at, updatedAt: l.updated_at })),
         groups: groups.map(toGroup),

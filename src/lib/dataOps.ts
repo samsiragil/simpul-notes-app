@@ -48,8 +48,8 @@ export function scheduleDailyBackup(): () => void {
 /** Tulis export ke subfolder baru di `dir`. Mengembalikan path folder hasil. */
 export async function exportTo(dir: string): Promise<string> {
   await flushPending();
-  const files = buildExport(await data().snapshot());
-  return native.writeExport(dir, exportFolderName(), files);
+  const { files, attachments } = buildExport(await data().snapshot());
+  return native.writeExport(dir, exportFolderName(), files, attachments);
 }
 
 // ---------- Folder data ----------
@@ -69,7 +69,10 @@ export async function checkDataDir(dir: string, info: native.DataInfo): Promise<
  */
 export async function moveDataDir(check: Extract<MoveCheck, { kind: "copy" | "useExisting" }>): Promise<void> {
   await flushPending();
-  if (check.kind === "copy") await data().copyTo(native.joinPath(check.dir, native.DB_FILE));
+  if (check.kind === "copy") {
+    await native.copyAttachments(check.dir);
+    await data().copyTo(native.joinPath(check.dir, native.DB_FILE));
+  }
   await native.setDataDir(check.dir);
 }
 

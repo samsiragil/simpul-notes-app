@@ -4,12 +4,32 @@ import { buildExport, exportFolderName, localDate, safeFileName } from "./export
 
 const T = Date.UTC(2026, 10, 17, 2, 30);
 
+const A1 = "aaaaaaaa-0000-7000-8000-000000000001";
+const A2 = "aaaaaaaa-0000-7000-8000-000000000002";
+
+const att = (id: string, fileName: string, ext: string, hash: string) => ({
+  id,
+  cardId: "n1",
+  fileName,
+  mimeType: "application/octet-stream",
+  sizeBytes: 1,
+  sha256: hash.repeat(64),
+  ext,
+  createdAt: T,
+  updatedAt: T,
+});
+
 const snap: Snapshot = {
   cards: [
-    { id: "n1", type: "note", title: "Rapat: Senin?", body: "## Agenda\n\n- sidebar", pinned: true, createdAt: T, updatedAt: T, trashedAt: null },
+    { id: "n1", type: "note", title: "Rapat: Senin?", body: `## Agenda\n\n- sidebar\n\n![Foto \\[1\\].png](attachment:${A1})\n\n![Laporan.pdf](attachment:${A2})`, pinned: true, createdAt: T, updatedAt: T, trashedAt: null },
     { id: "t1", type: "todo", title: "Sprint UI", body: null, pinned: false, createdAt: T, updatedAt: T, trashedAt: null },
     { id: "n2", type: "note", title: "Rapat: Senin?", body: "", pinned: false, createdAt: T, updatedAt: T, trashedAt: null },
     { id: "x1", type: "note", title: "", body: "lama", pinned: false, createdAt: T, updatedAt: T, trashedAt: T },
+  ],
+  attachments: [
+    att(A1, "Foto [1].png", "png", "1"),
+    att(A2, "Laporan.pdf", "pdf", "2"),
+    att("aaaaaaaa-0000-7000-8000-000000000003", "laporan.PDF", "pdf", "3"),
   ],
   todoItems: [
     { id: "i1", cardId: "t1", text: "Desain", done: true, position: 1, doneAt: T, createdAt: T, updatedAt: T },
@@ -38,7 +58,7 @@ describe("nama folder dan tanggal", () => {
 });
 
 describe("buildExport", () => {
-  const files = buildExport(snap, T);
+  const { files, attachments } = buildExport(snap, T);
   const byPath = new Map(files.map((f) => [f.path, f.content]));
 
   it("data.json berisi seluruh snapshot", () => {
@@ -61,6 +81,18 @@ describe("buildExport", () => {
     expect(md).toContain('groups: ["Proyek"]');
     expect(md).toContain('links: ["Sprint UI"]');
     expect(md).toContain("# Rapat: Senin?\n\n## Agenda\n\n- sidebar\n");
+  });
+
+  it("lampiran: disalin dengan nama asli dan dirujuk relatif", () => {
+    const md = byPath.get("cards/Rapat Senin.md")!;
+    expect(md).toContain("![Foto \\[1\\].png](<../attachments/Foto [1].png>)");
+    expect(md).toContain("[Laporan.pdf](<../attachments/Laporan.pdf>)");
+    expect(md).not.toContain("attachment:");
+    expect(attachments).toEqual([
+      { file: "1".repeat(64) + ".png", path: "attachments/Foto [1].png" },
+      { file: "2".repeat(64) + ".pdf", path: "attachments/Laporan.pdf" },
+      { file: "3".repeat(64) + ".pdf", path: "attachments/laporan (2).pdf" },
+    ]);
   });
 
   it("Todo: checklist Markdown", () => {

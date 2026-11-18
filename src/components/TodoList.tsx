@@ -4,6 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import type { TodoItem } from "../db";
 import { splitByDone } from "../lib/order";
+import { DIVIDER, isDividerShortcut } from "../lib/todoText";
 import { useSettings } from "../store/settings";
 import { useTodo } from "../store/todo";
 import { IconPlus } from "./Icons";
@@ -143,7 +144,13 @@ function AddItem({ inputRef, onExitUp }: { inputRef: RefObject<HTMLInputElement 
         spellCheck={false}
         value={text}
         placeholder="Tambah item…"
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          // `--` lalu spasi langsung menambah garis pemisah (seperti Notion).
+          if (isDividerShortcut(e.target.value)) {
+            setText("");
+            void add(null, DIVIDER, false);
+          } else setText(e.target.value);
+        }}
         onKeyDown={onKeyDown}
       />
     </label>

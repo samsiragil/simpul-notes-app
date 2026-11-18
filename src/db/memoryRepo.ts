@@ -1,8 +1,11 @@
 import { markHits, markSnippet, matchesAll, searchTerms } from "../lib/search";
+import { isDivider } from "../lib/todoText";
 import { markdownToText, newId, now } from "../lib/util";
 import type { Repos } from "./index";
 import {
   linkPair,
+  type Attachment,
+  type AttachmentRepo,
   type Card,
   type CardPatch,
   type CardRepo,
@@ -29,6 +32,7 @@ const ITEMS_KEY = "notes-app:dev-todo-items";
 const LINKS_KEY = "notes-app:dev-links";
 const GROUPS_KEY = "notes-app:dev-groups";
 const MEMBERS_KEY = "notes-app:dev-group-members";
+const ATTACH_KEY = "notes-app:dev-attachments";
 
 /** Progres, jumlah link, dan group dihitung saat dibaca, tidak disimpan. */
 type StoredCard = Omit<Card, "progress" | "linkCount" | "groupIds">;
@@ -86,6 +90,7 @@ export function createMemoryRepo(): Repos {
   let links = load<StoredLink>(LINKS_KEY);
   let groups = load<StoredGroup>(GROUPS_KEY);
   let members = load<StoredMember>(MEMBERS_KEY);
+  let attachments = load<Attachment>(ATTACH_KEY);
 
   if (cards.length === 0) {
     const t = now();
@@ -145,7 +150,7 @@ export function createMemoryRepo(): Repos {
   const enrich = (c: StoredCard): Card => {
     const extra = { linkCount: linkedIds(c.id).length, groupIds: groupIdsOf(c.id) };
     if (c.type !== "todo") return { ...c, ...extra, progress: null };
-    const list = aliveItems(c.id);
+    const list = aliveItems(c.id).filter((i) => !isDivider(i.text));
     return { ...c, ...extra, progress: { done: list.filter((i) => i.done).length, total: list.length } };
   };
 
@@ -183,9 +188,11 @@ export function createMemoryRepo(): Repos {
     items = items.map((i) => (i.cardId === id && i.deletedAt === null ? { ...i, deletedAt: t, updatedAt: t } : i));
     links = links.map((l) => ((l.cardA === id || l.cardB === id) && l.deletedAt === null ? { ...l, deletedAt: t, updatedAt: t } : l));
     members = members.map((m) => (m.cardId === id && m.deletedAt === null ? { ...m, deletedAt: t, updatedAt: t } : m));
+    attachments = attachments.map((a) => (a.cardId === id && a.deletedAt === null ? { ...a, deletedAt: t, updatedAt: t } : a));
     save(ITEMS_KEY, items);
     save(LINKS_KEY, links);
     save(MEMBERS_KEY, members);
+    save(ATTACH_KEY, attachments);
   };
 
   const cardRepo: CardRepo = {
@@ -364,6 +371,7 @@ export function createMemoryRepo(): Repos {
       const liveGroups = new Set(aliveGroups().map((g) => g.id));
       return {
         cards: live.map(({ deletedAt: _, ...c }) => c),
+        attachments: attachments.filter((a) => a.deletedAt === null && ids.has(a.cardId)).map(({ deletedAt: _, ...a }) => a),
         todoItems: items.filter((i) => i.deletedAt === null && ids.has(i.cardId)).map(toItem),
         links: links.filter((l) => l.deletedAt === null).map(({ deletedAt: _, ...l }) => l),
         groups: aliveGroups().map(toGroup),
@@ -375,5 +383,27 @@ export function createMemoryRepo(): Repos {
     },
   };
 
-  return { cards: cardRepo, todos: todoRepo, links: linkRepo, groups: groupRepo, search: searchRepo, data: dataRepo };
+  /** Hanya metadata; file fisik memerlukan aplikasi desktop. */
+  const attachmentRepo: AttachmentRepo = {
+    async create(a) {
+      const t = now();
+      const row: Attachment = { ...a, id: newId(), createdAt: t, updatedAt: t, deletedAt: null };
+      attachments = [...attachments, row];
+      save(ATTACH_KEY, attachments);
+      return row;
+    },
+    async get(id) {
+      return attachments.find((a) => a.id === id) ?? null;
+    },
+  };
+
+  return {
+    cards: cardRepo,
+    todos: todoRepo,
+    links: linkRepo,
+    groups: groupRepo,
+    search: searchRepo,
+    data: dataRepo,
+    attachments: attachmentRepo,
+  };
 }

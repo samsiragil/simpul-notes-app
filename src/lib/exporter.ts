@@ -1,6 +1,8 @@
-// P-6: export semua data ke folder Markdown + JSON.
-import type { Snapshot, SnapshotCard } from "../db/types";
-import type { ExportFile } from "./native";
+// P-6: export semua data ke folder Markdown + JSON, beserta salinan lampiran.
+import type { Snapshot, SnapshotAttachment, SnapshotCard } from "../db/types";
+import { extOf, kindOf, replaceAttachments, storedName } from "./attachments";
+import type { ExportAttachment, ExportFile } from "./native";
+import { isDivider } from "./todoText";
 
 export const EXPORT_VERSION = 1;
 
@@ -38,7 +40,13 @@ const yamlList = (xs: string[]) => `[${xs.map(yamlStr).join(", ")}]`;
 /** Isi file Markdown satu card: frontmatter, judul, lalu isi Note atau checklist Todo. */
 export function cardMarkdown(
   card: SnapshotCard,
-  ctx: { items: { text: string; done: boolean }[]; groups: string[]; links: string[] },
+  ctx: {
+    items: { text: string; done: boolean }[];
+    groups: string[];
+    links: string[];
+    /** Path lampiran di folder export (relatif dari root), per ID lampiran. */
+    attachmentPaths?: Map<string, string>;
+  },
 ): string {
   const title = card.title.trim() || "Tanpa judul";
   const front = [
@@ -56,18 +64,59 @@ export function cardMarkdown(
   ].join("\n");
   const body =
     card.type === "note"
-      ? (card.body ?? "").trim()
-      : ctx.items.map((i) => `- [${i.done ? "x" : " "}] ${i.text.replace(/\s*\n\s*/g, " ")}`).join("\n");
+      ? exportBody((card.body ?? "").trim(), ctx.attachmentPaths)
+      : ctx.items
+          .map((i) => (isDivider(i.text) ? "\n---\n" : `- [${i.done ? "x" : " "}] ${i.text.replace(/\s*\n\s*/g, " ")}`))
+          .join("\n");
   return `${front}\n\n# ${title}\n${body ? `\n${body}\n` : ""}`;
 }
 
 /**
+ * Referensi `attachment:<id>` diganti path relatif ke folder `attachments/` export
+ * (file `.md` ada satu tingkat di bawah root). Gambar tetap `![...]`, file lain jadi link biasa.
+ */
+function exportBody(body: string, paths: Map<string, string> | undefined): string {
+  if (!paths) return body;
+  return replaceAttachments(body, (id, name) => {
+    const path = paths.get(id);
+    if (!path) return `[${name}]`;
+    const link = `(<../${path}>)`;
+    const label = name.replace(/[\\[\]]/g, "\\$&");
+    return kindOf(extOf(path)) === "image" ? `![${label}]${link}` : `[${label}]${link}`;
+  });
+}
+
+/** Nama file unik per lampiran di `attachments/`, memakai nama asli. */
+function attachmentExportPaths(list: SnapshotAttachment[]): Map<string, string> {
+  const used = new Set<string>();
+  const paths = new Map<string, string>();
+  for (const a of list) {
+    const ext = a.ext || extOf(a.fileName);
+    const stem = safeFileName(ext && a.fileName.toLowerCase().endsWith(`.${ext}`) ? a.fileName.slice(0, -(ext.length + 1)) : a.fileName);
+    const dot = ext ? `.${ext}` : "";
+    let path = `attachments/${stem}${dot}`;
+    for (let n = 2; used.has(path.toLowerCase()); n++) path = `attachments/${stem} (${n})${dot}`;
+    used.add(path.toLowerCase());
+    paths.set(a.id, path);
+  }
+  return paths;
+}
+
+export interface ExportPlan {
+  files: ExportFile[];
+  /** Lampiran yang disalin backend dari folder lampiran ke folder export. */
+  attachments: ExportAttachment[];
+}
+
+/**
  * Susun file export:
- * - `data.json`: seluruh data (card, item, link, group) untuk impor ulang atau migrasi
+ * - `data.json`: seluruh data (card, item, link, group, metadata lampiran) untuk impor ulang atau migrasi
  * - `cards/*.md`: satu file per card aktif
  * - `trash/*.md`: card di Trash
+ * - `attachments/*`: salinan lampiran dengan nama aslinya
  */
-export function buildExport(snap: Snapshot, exportedAt = Date.now()): ExportFile[] {
+export function buildExport(snap: Snapshot, exportedAt = Date.now()): ExportPlan {
+  const attachmentPaths = attachmentExportPaths(snap.attachments);
   const titleOf = new Map(snap.cards.map((c) => [c.id, c.title.trim() || "Tanpa judul"]));
   const groupName = new Map(snap.groups.map((g) => [g.id, g.name]));
 
@@ -112,8 +161,10 @@ export function buildExport(snap: Snapshot, exportedAt = Date.now()): ExportFile
         items: itemsOf.get(card.id) ?? [],
         groups: groupsOf.get(card.id) ?? [],
         links: linksOf.get(card.id) ?? [],
+        attachmentPaths,
       }),
     });
   }
-  return files;
+  const attachments = snap.attachments.map((a) => ({ file: storedName(a.sha256, a.ext), path: attachmentPaths.get(a.id)! }));
+  return { files, attachments };
 }

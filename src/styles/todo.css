@@ -43,7 +43,36 @@
   padding: 0; margin: 0; font: inherit; line-height: inherit; color: var(--text);
 }
 .todo-text::placeholder { color: var(--placeholder); }
+.todo-text-wrap { flex: 1; min-width: 0; }
+.todo-editor { white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; }
+.todo-editor p { margin: 0; }
+.todo-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--placeholder);
+}
 .todo-item.done .todo-text { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--placeholder); }
+
+/* Tampilan baca dan editor item: link, tebal, miring, highlight */
+.todo-view { cursor: text; white-space: pre-wrap; overflow-wrap: anywhere; }
+.todo-view.empty { color: var(--placeholder); }
+.todo-text a, .todo-link {
+  color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in oklch, var(--accent) 40%, transparent);
+  text-underline-offset: 2px; cursor: pointer;
+}
+.todo-text a:hover, .todo-link:hover { text-decoration-color: var(--accent); }
+.todo-item.done .todo-text a { color: var(--text-3); }
+.todo-text strong { font-weight: 650; }
+/* Highlight memakai latar, sama dengan Note: tetap terbaca di tema terang dan gelap */
+.todo-text mark { background: var(--highlight); color: inherit; padding: 0 0.15em; border-radius: 3px; }
+.todo-item.done .todo-text mark { background: none; padding: 0; }
+
+/* Item pemisah: ketik `--` lalu spasi */
+.todo-item.divider { align-items: center; }
+.todo-divider {
+  flex: 1; height: calc(var(--fs) * var(--lh)); outline: none; border-radius: var(--radius-sm);
+  display: flex; align-items: center;
+}
+.todo-divider::before { content: ""; flex: 1; height: 1px; background: var(--border); }
+.todo-divider:focus-visible::before, .todo-divider:focus::before { background: var(--accent); }
 
 .todo-add { display: flex; align-items: center; gap: 0.55em; padding: 0.12em 0; cursor: text; }
 .todo-add-icon {

@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Card } from "../db";
-import { NoteEditor } from "../editor/NoteEditor";
+import { NoteEditor, type NoteEditorHandle } from "../editor/NoteEditor";
 import { registerFlush } from "../lib/dataOps";
+import { hasNative } from "../lib/native";
 import { debounce, fullDate, relativeTime } from "../lib/util";
 import { selectedCard, useApp } from "../store/app";
 import { useSettings } from "../store/settings";
 import { GroupChips } from "./GroupChips";
-import { IconBack, IconFocus, IconLink, IconList, IconNote, IconPin, IconRestore, IconSearch, IconSidebar, IconTodo, IconTrash } from "./Icons";
+import { IconAttach, IconBack, IconFocus, IconLink, IconList, IconNote, IconPin, IconRestore, IconSearch, IconSidebar, IconTodo, IconTrash } from "./Icons";
 import { LinkedPanel } from "./LinkedPanel";
 import { focusFirstTodo, TodoList } from "./TodoList";
 import { TodoProgress } from "./TodoProgress";
@@ -105,6 +106,7 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
 
   const [title, setTitle] = useState(card.title);
   const titleRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<NoteEditorHandle>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Satu debouncer per card; perubahan judul + isi digabung lalu disimpan.
@@ -215,10 +217,22 @@ function CardBody({ card, readOnly }: { card: Card; readOnly: boolean }) {
           <span title={`Dibuat ${fullDate(card.createdAt)}`}>{fullDate(card.updatedAt)}</span>
           {card.progress && <TodoProgress progress={card.progress} />}
           <GroupChips card={card} readOnly={readOnly} />
+          {card.type === "note" && !readOnly && hasNative() && (
+            <button
+              type="button"
+              className="chip-add"
+              title="Lampirkan file (bisa juga drag & drop atau paste)"
+              onClick={() => editorRef.current?.pickAttachments()}
+            >
+              <IconAttach size={12} />
+              Lampirkan
+            </button>
+          )}
         </div>
 
         {card.type === "note" ? (
           <NoteEditor
+            ref={editorRef}
             cardId={card.id}
             initialMarkdown={card.body ?? ""}
             editable={!readOnly}

@@ -56,3 +56,53 @@
 .bubble button:hover { background: var(--bubble-hover); }
 .bubble button.on { background: var(--bubble-on); color: var(--bubble-on-text); }
 .bubble .sep { width: 1px; background: var(--bubble-sep); margin: 4px 3px; }
+
+/* ---------- Lampiran ---------- */
+.note-body .att { margin: 0 0 0.85em; max-width: 100%; position: relative; }
+.note-body .att.is-selected .att-media,
+.note-body .att.is-selected .att-file { outline: 2px solid var(--accent); outline-offset: 2px; }
+.att-media { margin: 0; position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+.att-media img,
+.att-media video { display: block; max-width: 100%; max-height: 70vh; border-radius: var(--radius); background: var(--code-bg); }
+.att-media img { cursor: default; }
+.att-file {
+  display: flex; align-items: center; gap: 12px; max-width: 460px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+  font-family: var(--font-ui); line-height: 1.35; cursor: default; user-select: none;
+}
+.att-file:hover { border-color: var(--border-strong); }
+.att-file-icon { flex: none; display: inline-flex; color: var(--icon); }
+.att-file-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.att-file-name { font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att-file-meta { font-size: 12px; color: var(--text-3); }
+.att-audio { max-width: 520px; }
+.att-audio audio { width: 100%; height: 32px; margin-top: 4px; }
+.att-loading { color: var(--text-3); font-size: 13px; }
+.att-missing .att-file-icon { color: var(--danger); }
+
+/* Tombol aksi: muncul saat hover */
+.att-actions { display: inline-flex; gap: 2px; flex: none; }
+.att-media .att-actions {
+  position: absolute; top: 8px; right: 8px; padding: 3px; border-radius: var(--radius-sm);
+  background: var(--bubble-bg); line-height: normal; opacity: 0; transition: opacity 0.12s;
+}
+.att-media:hover .att-actions { opacity: 1; }
+.att-media .att-actions button { color: var(--bubble-text); }
+.att-media .att-actions button:hover { background: var(--bubble-hover); }
+.att-file .att-actions { opacity: 0; transition: opacity 0.12s; }
+.att-file:hover .att-actions { opacity: 1; }
+.att-actions button {
+  width: 28px; height: 28px; border: 0; border-radius: 5px; background: none; color: var(--icon);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.att-actions button:hover { background: var(--hover); color: var(--text); }
+
+/* Drag & drop file dari Explorer */
+.drop-over .note-body { outline: 2px dashed var(--accent); outline-offset: 8px; border-radius: var(--radius-sm); }
+
+/* Status impor lampiran */
+.att-status {
+  max-width: var(--content-w); margin-top: 8px; padding: 8px 12px; border-radius: var(--radius);
+  background: var(--field); color: var(--text-2); font-family: var(--font-ui); font-size: 12.5px;
+}
+.att-status.error { color: var(--danger); }

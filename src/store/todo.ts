@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { todos, type TodoItem, type TodoProgress } from "../db";
 import { positionAfter, positionMoveBy, positionMoveTo, type Placement } from "../lib/order";
+import { isDivider } from "../lib/todoText";
 import { debounce, newId, now } from "../lib/util";
 import { useApp } from "./app";
 
@@ -45,10 +46,11 @@ interface TodoState {
   flush(): Promise<void>;
 }
 
-export const progressOf = (items: readonly TodoItem[]): TodoProgress => ({
-  done: items.filter((i) => i.done).length,
-  total: items.length,
-});
+/** Divider tidak dihitung sebagai item. */
+export const progressOf = (items: readonly TodoItem[]): TodoProgress => {
+  const real = items.filter((i) => !isDivider(i.text));
+  return { done: real.filter((i) => i.done).length, total: real.length };
+};
 
 export const useTodo = create<TodoState>((set, get) => {
   /**

@@ -37,6 +37,8 @@ export function markdownToText(md: string | null, keepCode = false): string {
   return md
     .replace(keepCode ? /^\s*```.*$/gm : /```[\s\S]*?```/g, " ")
     .replace(/<[^>]+>/g, " ")
+    // Nama file lampiran ikut terbaca (pencarian dan preview); gambar lain dibuang.
+    .replace(/!\[((?:\\.|[^\]\\\n])*)\]\(attachment:[^)]*\)/g, (_, name: string) => ` ${name.replace(/\\(.)/g, "$1")} `)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+(\[[ xX]\]\s+)?/gm, "")
